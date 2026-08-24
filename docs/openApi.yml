@@ -12,7 +12,7 @@ info:
     - `POST /auth/signin` — Login (can't have token yet)
     - `POST /auth/forgot-password` — Password reset request (can't have token yet)
     - `POST /auth/reset-password` — Password reset completion (can't have token yet)
-    - `GET /products`, `GET /products/{productId}/variants`, `GET /products/{productId}/images`, `GET /categories` — Product/category browsing doesn't require authentication
+    - `GET /products`, `GET /products/{productId}`, `GET /products/{productId}/variants`, `GET /products/{productId}/images`, `GET /categories` — Product/category browsing doesn't require authentication
     - `POST /webhooks/stripe` — Called by Stripe, not a user; authenticated via Stripe-Signature header instead of a bearer token
 
     Authentication failures return 401 (Authentication credentials invalid or missing) or 403 (insufficient permissions). The server reads the JWT role and automatically scopes results (regular users see only their own data; managers see all data).
@@ -86,6 +86,8 @@ components:
           format: date-time
           example: "1985-04-12T23:20:50.52Z"
     Category:
+      required:
+        - name
       type: object
       properties:
         id:
@@ -301,7 +303,7 @@ components:
             - inactive
             - discontinued
           example: "active"
-        category:
+        categoryId:
           type: integer
           description: Set a category for this product
           example: 1
@@ -321,7 +323,7 @@ components:
             - inactive
             - discontinued
           example: "active"
-        category:
+        categoryId:
           type: integer
           description: Set a category for this product
           example: 1
@@ -361,6 +363,9 @@ components:
           type: string
           format: date-time
     Cart:
+      required:
+        - items
+        - userId
       type: object
       properties:
         id:
@@ -381,6 +386,12 @@ components:
         userId:
           type: integer
     Order:
+      required:
+        - items
+        - totalAmount
+        - status
+        - paymentMethod
+        - userId
       type: object
       properties:
         id:
@@ -500,6 +511,10 @@ components:
             - delivered
           example: "processing"
     OrderStatusHistory:
+      required:
+        - status
+        - changedAt
+        - changedBy
       type: object
       properties:
         status:
@@ -558,6 +573,17 @@ components:
           type: string
           format: date-time
           example: "1985-04-12T23:20:50.52Z"
+    AuthResponse:
+      required:
+        - user
+        - token
+      type: object
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+        token:
+          type: string
+          description: JWT bearer token for subsequent requests
     UserInput:
       required:
         - email
@@ -843,7 +869,7 @@ paths:
       description: Returns a list of products
       operationId: getProducts
       parameters:
-        - name: category
+        - name: categoryId
           in: query
           required: false
           schema:
@@ -1736,12 +1762,14 @@ paths:
         - name: minAmount
           in: query
           required: false
+          description: Minimum total amount, in cents
           schema:
             type: integer
             format: int64
         - name: maxAmount
           in: query
           required: false
+          description: Maximum total amount, in cents
           schema:
             type: integer
             format: int64
@@ -2207,6 +2235,7 @@ paths:
       operationId: createUser
       requestBody:
         description: Created user object
+        required: true
         content:
           application/json:
             schema:
@@ -2227,6 +2256,12 @@ paths:
                 $ref: "#/components/schemas/User"
         "409":
           description: This email already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Validation exception
           content:
             application/json:
               schema:
@@ -2272,16 +2307,15 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  user:
-                    $ref: "#/components/schemas/User"
-                  token:
-                    type: string
-                    description: JWT bearer token for subsequent requests
-                required: [user, token]
+                $ref: "#/components/schemas/AuthResponse"
         "401":
           description: Invalid email/password supplied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Validation exception
           content:
             application/json:
               schema:
@@ -2338,6 +2372,18 @@ paths:
       responses:
         "200":
           description: Password reset link sent to email
+        "422":
+          description: Validation exception
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: Too many reset requests, rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         "default":
           description: Unexpected error
           content:
@@ -2376,6 +2422,18 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        "422":
+          description: Validation exception
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: Too many reset attempts, rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         "default":
           description: Unexpected error
           content:
@@ -2407,6 +2465,10 @@ paths:
           description: Webhook received and processed
         "400":
           description: Invalid signature or malformed payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         "default":
           description: Unexpected error
           content:
