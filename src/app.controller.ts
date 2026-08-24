@@ -6,8 +6,8 @@ import type { categoryType } from './categories/categories.service';
 export class AppController {
   constructor(
     private readonly appService: AppService,
-    private categoriesService: CategoriesService
-  ) { }
+    private categoriesService: CategoriesService,
+  ) {}
 
   @Get()
   getHello(): string {
@@ -17,6 +17,4 @@ export class AppController {
   findAll(): categoryType {
     return this.categoriesService.findAll();
   }
-
 }
-

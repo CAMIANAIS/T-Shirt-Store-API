@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
-export type categoryType = string[]
+export type categoryType = string[];
 @Injectable()
 export class CategoriesService {
-    findAll(): categoryType {
-        return ['t-shirts', 'hoodies', 'accessories'];
-    }
+  findAll(): categoryType {
+    return ['t-shirts', 'hoodies', 'accessories'];
+  }
 }
