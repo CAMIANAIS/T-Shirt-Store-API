@@ -1,0 +1,27 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=$(jq -r '.tool_input.file_path // .tool_response.filePath // empty'); case \"$f\" in *.ts) [ -x node_modules/.bin/eslint ] && node_modules/.bin/eslint --fix \"$f\"; [ -x node_modules/.bin/prettier ] && node_modules/.bin/prettier --write \"$f\" ;; esac; true",
+            "statusMessage": "Linting & formatting .ts file..."
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Read|Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=$(jq -r '.tool_input.file_path // empty'); case \"$f\" in *.env|*.env.*|*/.env|*.pem|*.key|*secrets*) jq -n --arg f \"$f\" '{hookSpecificOutput:{hookEventName:\"PreToolUse\",permissionDecision:\"deny\",permissionDecisionReason:(\"Blocked: looks like a secret/env file: \" + $f)}}' ;; esac"
+          }
+        ]
+      }
+    ]
+  }
+}

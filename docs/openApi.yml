@@ -1,0 +1,2415 @@
+openapi: 3.2.0
+info:
+  title: T-Shirt Store-OpenAPI
+  version: 1.0.0
+  description: |-
+    This is first version of the contract for T-Shirt Store-OpenAPI. You can find out more about the patterns followed here https://github.com/CAMIANAIS/T-Shirt-Store-API/blob/main/docs/openApi_Patterns.md
+
+    ## Authentication
+
+    All endpoints require Bearer token authentication via JWT, except for the following public endpoints:
+    - `POST /auth/signup` — Registration (can't have token yet)
+    - `POST /auth/signin` — Login (can't have token yet)
+    - `POST /auth/forgot-password` — Password reset request (can't have token yet)
+    - `POST /auth/reset-password` — Password reset completion (can't have token yet)
+    - `GET /products`, `GET /products/{productId}/variants`, `GET /products/{productId}/images`, `GET /categories` — Product/category browsing doesn't require authentication
+    - `POST /webhooks/stripe` — Called by Stripe, not a user; authenticated via Stripe-Signature header instead of a bearer token
+
+    Authentication failures return 401 (Authentication credentials invalid or missing) or 403 (insufficient permissions). The server reads the JWT role and automatically scopes results (regular users see only their own data; managers see all data).
+servers:
+  - url: http://localhost:3000
+tags:
+  - name: user
+    summary: User account operations
+    description: Operations about user management and authentication
+  - name: product
+    summary: Product operations
+    description: Operations about products
+  - name: cart
+    summary: Cart operations
+    description: Operations about cart
+  - name: order
+    summary: Order operations
+    description: Operations about orders
+  - name: productVariant
+    summary: ProductVariant operations
+    description: Operations about productVariant
+  - name: category
+    summary: Category operations
+    description: Operations about categories
+  - name: payment/webhook
+    summary: Payment/webhook operations
+    description: Operations about payment/webhook
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Product:
+      required:
+        - name
+        - description
+        - status
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 10
+        name:
+          type: string
+          example: "summer-tshirt"
+        description:
+          type: string
+          example: "long sleeves, 100% cotton"
+        status:
+          type: string
+          enum:
+            - active
+            - inactive
+            - discontinued
+          example: "active"
+        category:
+          $ref: "#/components/schemas/Category"
+        createdAt:
+          type: string
+          format: date-time
+          example: "1985-04-12T23:20:50.52Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "1985-04-12T23:20:50.52Z"
+        deletedAt:
+          type: string
+          format: date-time
+          example: "1985-04-12T23:20:50.52Z"
+    Category:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        name:
+          type: string
+          example: "tshirts"
+
+        createdAt:
+          type: string
+          format: date-time
+          example: "1985-04-12T23:20:50.52Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "1985-04-12T23:20:50.52Z"
+        deletedAt:
+          type: string
+          format: date-time
+          example: "1985-04-12T23:20:50.52Z"
+    ProductVariant:
+      required:
+        - size
+        - color
+        - stockQuantity
+        - skuCode
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        size:
+          type: string
+          enum:
+            - "S"
+            - "M"
+            - "L"
+            - "XL"
+            - "XXL"
+          example: "S"
+        color:
+          type: string
+          example: "red"
+        stockQuantity:
+          type: integer
+          format: int64
+          example: 1
+
+        skuCode:
+          type: string
+          pattern: "^[a-zA-Z0-9]+$"
+          example: "TSH-BLU-MD"
+        status:
+          type: string
+          enum:
+            - active
+            - inactive
+            - discontinued
+        createdAt:
+          type: string
+          format: date-time
+          example: "1985-04-12T23:20:50.52Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "1985-04-12T23:20:50.52Z"
+        product:
+          $ref: "#/components/schemas/Product"
+    ProductVariantInput:
+      required:
+        - size
+        - color
+        - stockQuantity
+        - skuCode
+      type: object
+      properties:
+        size:
+          type: string
+          enum:
+            - "S"
+            - "M"
+            - "L"
+            - "XL"
+            - "XXL"
+          example: "S"
+        color:
+          type: string
+          example: "red"
+        stockQuantity:
+          type: integer
+          format: int64
+          example: 1
+
+        skuCode:
+          type: string
+          pattern: "^[a-zA-Z0-9]+$"
+          example: "TSH-BLU-MD"
+        status:
+          type: string
+          enum:
+            - active
+            - inactive
+            - discontinued
+    ProductVariantUpdateInput:
+      type: object
+      properties:
+        size:
+          type: string
+          enum:
+            - "S"
+            - "M"
+            - "L"
+            - "XL"
+            - "XXL"
+          example: "S"
+        color:
+          type: string
+          example: "red"
+        stockQuantity:
+          type: integer
+          format: int64
+          example: 1
+
+        skuCode:
+          type: string
+          pattern: "^[a-zA-Z0-9]+$"
+          example: "TSH-BLU-MD"
+        status:
+          type: string
+          enum:
+            - active
+            - inactive
+            - discontinued
+    ProductImage:
+      required:
+        - bucketName
+        - filename
+        - extension
+        - displayOrder
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        bucketName:
+          type: string
+          example: "bucketNameHere"
+        filename:
+          type: string
+          example: "fileNameHere"
+        extension:
+          type: string
+          enum:
+            - "jpg"
+            - "png"
+            - "webp"
+            - "gif"
+          example: "jpg"
+        displayOrder:
+          type: integer
+          format: int64
+          example: 1
+        altText:
+          type: string
+          example: "Product front view"
+        createdAt:
+          type: string
+          format: date-time
+          example: "1985-04-12T23:20:50.52Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "1985-04-12T23:20:50.52Z"
+        product:
+          $ref: "#/components/schemas/Product"
+    ProductImageInput:
+      required:
+        - file
+      type: object
+      properties:
+        file:
+          type: string
+          format: binary
+          description: "Raw image file bytes. Supported formats: jpg, png, webp, gif"
+        displayOrder:
+          type: integer
+          format: int64
+          example: 1
+        altText:
+          type: string
+          example: "Product front view"
+    ProductInput:
+      required:
+        - name
+        - description
+        - status
+      type: object
+      properties:
+        name:
+          type: string
+          example: "summer-tshirt"
+        description:
+          type: string
+          example: "long sleeves, 100% cotton"
+        status:
+          type: string
+          enum:
+            - active
+            - inactive
+            - discontinued
+          example: "active"
+        category:
+          type: integer
+          description: Set a category for this product
+          example: 1
+    ProductUpdateInput:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "summer-tshirt"
+        description:
+          type: string
+          example: "long sleeves, 100% cotton"
+        status:
+          type: string
+          enum:
+            - active
+            - inactive
+            - discontinued
+          example: "active"
+        category:
+          type: integer
+          description: Set a category for this product
+          example: 1
+    LineItem:
+      required:
+        - id
+        - productVariantId
+        - quantity
+        - priceAtPurchase
+        - subtotal
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        productVariantId:
+          type: integer
+          example: 42
+        quantity:
+          type: integer
+          example: 2
+          minimum: 1
+        priceAtPurchase:
+          type: integer
+          format: int64
+          example: 2999
+          description: Price per unit in cents (locked at purchase)
+        subtotal:
+          type: integer
+          format: int64
+          example: 5998
+          description: quantity × price_at_purchase (calculated)
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    Cart:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        items:
+          type: array
+          items: { "$ref": "#/components/schemas/LineItem" }
+        createdAt:
+          type: string
+          format: date-time
+          example: "1985-04-12T23:20:50.52Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "1985-04-12T23:20:50.52Z"
+        userId:
+          type: integer
+    Order:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        items:
+          type: array
+          items: { "$ref": "#/components/schemas/LineItem" }
+        totalAmount:
+          type: integer
+          format: int64
+          example: 1000
+          description: Amount in cents (e.g., 1000 = $10.00)
+          minimum: 0
+        status:
+          type: string
+          enum:
+            - pending
+            - paid
+            - processing
+            - shipped
+            - cancelled
+            - delivered
+          example: "pending"
+        paymentMethod:
+          type: string
+          enum: [payment_link, payment_intent]
+          example: "payment_intent"
+        createdAt:
+          type: string
+          format: date-time
+          example: "1985-04-12T23:20:50.52Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "1985-04-12T23:20:50.52Z"
+        userId:
+          type: integer
+    CartItemsInput:
+      required:
+        - productVariantId
+        - quantity
+      type: object
+      properties:
+        productVariantId:
+          type: integer
+        quantity:
+          type: integer
+    CartItemsInputById:
+      required:
+        - quantity
+      type: object
+      properties:
+        quantity:
+          type: integer
+          example: 1
+    OrderInput:
+      required:
+        - shippingAddress
+      type: object
+      properties:
+        shippingAddress:
+          $ref: "#/components/schemas/OrderAddressInput"
+    OrderAddressInput:
+      required:
+        - street1
+        - street2
+        - city
+        - postalCode
+        - state
+        - country
+      type: object
+      properties:
+        street1:
+          type: string
+          example: "123 Main St"
+        street2:
+          type: string
+          example: "Apt 4B"
+        street3:
+          type: string
+        city:
+          type: string
+          example: "New York"
+        postalCode:
+          type: string
+          example: "10001"
+        state:
+          type: string
+          example: "NY"
+        country:
+          type: string
+          example: "USA"
+    PaymentIntentInput:
+      required:
+        - paymentMethod
+      type: object
+      properties:
+        paymentMethod:
+          type: string
+          enum: [card, bank_account, apple_pay, google_pay]
+          example: "card"
+    OrderStatusInput:
+      required:
+        - status
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+            - pending
+            - paid
+            - processing
+            - shipped
+            - cancelled
+            - delivered
+          example: "processing"
+    OrderStatusHistory:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+            - pending
+            - paid
+            - processing
+            - shipped
+            - cancelled
+            - delivered
+          example: "processing"
+        changedAt:
+          type: string
+          format: date-time
+          example: "1985-04-12T23:20:50.52Z"
+        changedBy:
+          oneOf:
+            - $ref: "#/components/schemas/ChangedByUser"
+            - $ref: "#/components/schemas/ChangedBySystem"
+          discriminator:
+            propertyName: type
+            mapping:
+              user: "#/components/schemas/ChangedByUser"
+              system: "#/components/schemas/ChangedBySystem"
+    User:
+      required:
+        - id
+        - email
+        - role
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        email:
+          type: string
+          format: email
+          example: "jhon@example.com"
+        name:
+          type: string
+          example: "Jhon"
+        role:
+          type: string
+          enum: [manager, client]
+        createdAt:
+          type: string
+          format: date-time
+          example: "1985-04-12T23:20:50.52Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "1985-04-12T23:20:50.52Z"
+        deletedAt:
+          type: string
+          format: date-time
+          example: "1985-04-12T23:20:50.52Z"
+    UserInput:
+      required:
+        - email
+        - password
+      type: object
+      properties:
+        name:
+          type: string
+          example: "Jhon"
+        email:
+          type: string
+          format: email
+          example: "jhon@example.com"
+        password:
+          type: string
+          format: password
+    Error:
+      type: object
+      properties:
+        statusCode:
+          type: integer
+          example: 404
+        message:
+          type: string
+          example: "Product not found"
+        error:
+          type: string
+          example: "Not Found"
+    ChangedByUser:
+      type: object
+      required:
+        - type
+        - email
+      properties:
+        type:
+          type: string
+          enum: [user]
+        email:
+          type: string
+          format: email
+          description: Immutable email snapshot at time of change
+        userId:
+          type: integer
+          format: int64
+          nullable: true
+          description: User ID if account still exists; null if deleted
+    ChangedBySystem:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum: [system]
+security:
+  - bearerAuth: []
+paths:
+  /products/{productId}:
+    get:
+      tags:
+        - product
+      summary: Find product by identifier
+      description: Returns a single product.
+      operationId: getProductById
+      parameters:
+        - name: productId
+          in: path
+          description: ID of product to return
+          required: true
+          schema:
+            type: integer
+            format: int64
+      security: []
+      responses:
+        "200":
+          description: Product successfully returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "400":
+          description: Invalid productId
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "default":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    patch:
+      tags:
+        - product
+      summary: Update product
+      description: Updates any field of a product
+      operationId: updateProductItem
+      parameters:
+        - name: productId
+          in: path
+          description: ID of the product to update
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        description: Update the product
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductUpdateInput"
+          application/xml:
+            schema:
+              $ref: "#/components/schemas/ProductUpdateInput"
+        required: true
+      responses:
+        "200":
+          description: Product updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "400":
+          description: Invalid productId
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Authentication credentials invalid or missing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Validation exception
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "default":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    delete:
+      tags:
+        - product
+      summary: Soft Delete a product
+      description: Removes a product using a logical delete.
+      operationId: removeProduct
+      parameters:
+        - name: productId
+          in: path
+          description: ID of product to remove
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "204":
+          description: Item removed successfully
+        "400":
+          description: Invalid productId
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Authentication credentials invalid or missing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "default":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /categories:
+    get:
+      tags:
+        - category
+      summary: Get all categories
+      description: Returns a list of all product categories for browsing and filtering
+      operationId: getCategories
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+            maximum: 50
+            description: Show categories considering this limit
+            example: 20
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+            description: Show categories considering this offset
+            example: 0
+      security: []
+      responses:
+        "200":
+          description: Categories successfully returned
+          headers:
+            X-TotalCount:
+              description: Total number of categories
+              schema:
+                type: integer
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Category"
+            application/xml:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Category"
+        "400":
+          description: Invalid pagination parameters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "default":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /products:
+    get:
+      tags:
+        - product
+      summary: Get all products
+      description: Returns a list of products
+      operationId: getProducts
+      parameters:
+        - name: category
+          in: query
+          required: false
+          schema:
+            type: integer
+            description: Filter products by category id
+            example: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+            maximum: 50
+            description: Show products considering this limit
+            example: 1
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+            description: Show products considering this offset
+            example: 1
+      security: []
+      responses:
+        "200":
+          description: Products successfully returned
+          headers:
+            X-TotalCount:
+              description: Total number of products matching the applied filters
+              schema:
+                type: integer
+          content:
+            application/json:
+              schema:
+                {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Product" },
+                }
+            application/xml:
+              schema:
+                {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Product" },
+                }
+        "400":
+          description: Invalid category or pagination parameters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "default":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    post:
+      tags:
+        - product
+      summary: Add a new product.
+      description: Add a new product.
+      operationId: addProduct
+      requestBody:
+        description: Create a new product in the store
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductInput"
+          application/xml:
+            schema:
+              $ref: "#/components/schemas/ProductInput"
+        required: true
+      responses:
+        "201":
+          description: Product created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Authentication credentials invalid or missing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Validation exception
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "default":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /products/{productId}/variants:
+    get:
+      tags:
+        - productVariant
+      summary: Find productVariants by identifier
+      description: Returns productVariants.
+      operationId: getProductVariants
+      parameters:
+        - name: productId
+          in: path
+          description: ID of product to return
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+            maximum: 50
+            description: Show productVariants considering this limit
+            example: 1
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+            description: Show productVariants considering this offset
+            example: 1
+      security: []
+      responses:
+        "200":
+          description: ProductVariants successfully returned
+          headers:
+            X-TotalCount:
+              description: Total number of productVariants matching the applied filters
+              schema:
+                type: integer
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProductVariant"
+            application/xml:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProductVariant"
+        "400":
+          description: Invalid productId
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "default":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    post:
+      tags:
+        - productVariant
+      summary: Add a new productVariant.
+      description: Add a new productVariant.
+      operationId: addProductVariant
+      parameters:
+        - name: productId
+          in: path
+          description: ID of product to return
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        description: Create a new productVariant in the store
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductVariantInput"
+          application/xml:
+            schema:
+              $ref: "#/components/schemas/ProductVariantInput"
+        required: true
+      responses:
+        "201":
+          description: ProductVariant created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductVariant"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/ProductVariant"
+        "400":
+          description: Invalid productId
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Authentication credentials invalid or missing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: SKU already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Validation exception
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "default":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /products/{productId}/variants/{productVariantId}:
+    patch:
+      tags:
+        - productVariant
+      summary: Update productVariants by Id
+      description: Updates any field of a productVariant by Id
+      operationId: updateProductVariantById
+      parameters:
+        - name: productId
+          in: path
+          description: ID of the product to update
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: productVariantId
+          in: path
+          description: ID of the productVariant to update
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        description: Update the productVariant
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductVariantUpdateInput"
+          application/xml:
+            schema:
+              $ref: "#/components/schemas/ProductVariantUpdateInput"
+        required: true
+      responses:
+        "200":
+          description: ProductVariant successfully updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductVariant"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/ProductVariant"
+        "400":
+          description: Invalid productId or productVariantId
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Authentication credentials invalid or missing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: ProductVariant not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Validation exception
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "default":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /products/{productId}/images:
+    get:
+      tags:
+        - product
+      summary: Find images by product Id.
+      description: Returns images by product Id.
+      operationId: getProductImages
+      parameters:
+        - name: productId
+          in: path
+          description: ID of product to return
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+            maximum: 50
+            description: Show productImages considering this limit
+            example: 1
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+            description: Show productImages considering this offset
+            example: 1
+      security: []
+      responses:
+        "200":
+          description: ProductImages successfully returned
+          headers:
+            X-TotalCount:
+              description: Total number of productImages matching the applied filters
+              schema:
+                type: integer
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProductImage"
+            application/xml:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProductImage"
+        "400":
+          description: Invalid productId
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "default":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    post:
+      tags:
+        - product
+      summary: Add a new productImage.
+      description: Add a new productImage.
+      operationId: addProductImage
+      parameters:
+        - name: productId
+          in: path
+          description: ID of product to return
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        description: Create a new productImage in the store
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/ProductImageInput"
+        required: true
+      responses:
+        "201":
+          description: ProductImage created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductImage"
+        "400":
+          description: Missing file
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Authentication credentials invalid or missing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Validation exception
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "default":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /products/{productId}/likes:
+    post:
+      tags:
+        - product
+      summary: Like a product
+      description: |
+        Add the authenticated user to the product's likes.
+
+        **Idempotent:** calling this multiple times has the same effect as calling it once.
+        If the user already likes this product, returns 204 (success) with no change.
+      operationId: likeProduct
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          example: 42
+      responses:
+        "204":
+          description: Product liked successfully (or already liked by this user)
+        "401":
+          description: Authentication credentials invalid or missing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "default":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    delete:
+      tags:
+        - product
+      summary: Unlike a product
+      description: |
+        Remove the authenticated user from the product's likes.
+
+        **Idempotent:** calling this multiple times has the same effect as calling it once.
+        If the user does not like this product, returns 204 (success) with no change.
+      operationId: unlikeProduct
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          example: 42
+      responses:
+        "204":
+          description: Product unliked successfully (or was not liked by this user)
+        "401":
+          description: Authentication credentials invalid or missing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "default":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /products/{productId}/paymentLink:
+    post:
+      tags:
+        - product
+      summary: Generate payment link for single product
+      description: Create a shareable Stripe Payment Link for direct product purchase
+      parameters:
+        - name: productId
+          in: path
+          description: ID of product to return
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "201":
+          description: paymentLink created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  paymentLink:
+                    type: string
+                    example: "https://buy.stripe.com/test_..."
+                  expiresAt:
+                    type: string
+                    format: date-time
+        "401":
+          description: Authentication credentials invalid or missing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "default":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /carts:
+    get:
+      tags:
+        - cart
+      summary: Get current user's cart
+      description: Returns the cart for the authenticated user
+      operationId: getCart
+      responses:
+        "200":
+          description: Cart successfully returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cart"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/Cart"
+        "401":
+          description: Authentication credentials invalid or missing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Cart not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "default":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    delete:
+      tags:
+        - cart
+      summary: Clear user's cart
+      description: Deletes all items from the authenticated user's cart
+      operationId: clearCart
+      responses:
+        "204":
+          description: Cart cleared successfully
+        "401":
+          description: Authentication credentials invalid or missing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Cart not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "default":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /carts/items:
+    post:
+      tags:
+        - cart
+      summary: Add item to cart
+      description: Adds a product variant to the authenticated user's cart
+      operationId: addCartItem
+      requestBody:
+        description: Add a product variant to the cart
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CartItemsInput"
+          application/xml:
+            schema:
+              $ref: "#/components/schemas/CartItemsInput"
+        required: true
+      responses:
+        "201":
+          description: Item added successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cart"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/Cart"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Authentication credentials invalid or missing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Product variant not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Validation exception
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "default":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /carts/items/{itemId}:
+    patch:
+      tags:
+        - cart
+      summary: Update cart item quantity
+      description: Updates the quantity of a line item in the authenticated user's cart
+      operationId: updateCartItem
+      parameters:
+        - name: itemId
+          in: path
+          description: ID of the line item to update
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        description: Update the line item quantity
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CartItemsInputById"
+          application/xml:
+            schema:
+              $ref: "#/components/schemas/CartItemsInputById"
+        required: true
+      responses:
+        "200":
+          description: LineItem updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LineItem"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/LineItem"
+        "400":
+          description: Invalid itemId
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Authentication credentials invalid or missing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Line item not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Validation exception
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "default":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    delete:
+      tags:
+        - cart
+      summary: Remove item from cart
+      description: |
+        Removes a line item from the authenticated user's cart.
+
+        **Idempotent:** calling this multiple times has the same effect as calling it once.
+        If the item does not exist or is already removed, returns 204 (success) with no change.
+      operationId: removeCartItem
+      parameters:
+        - name: itemId
+          in: path
+          description: ID of the line item to remove
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "204":
+          description: Item removed successfully (or was not in cart)
+        "400":
+          description: Invalid itemId
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Authentication credentials invalid or missing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "default":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /orders:
+    get:
+      tags:
+        - order
+      summary: Get current user's order
+      description: |
+        Retrieve orders for the authenticated user, with optional filtering by status.
+
+        **Role-based scoping (JWT-based, automatic):**
+        - Regular user: returns only their own orders
+        - manager: returns all orders in the system (use this to build order-management dashboards)
+
+        The server reads the role from the JWT token and scopes results automatically — no query param needed.
+        operationId: getOrders
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - pending
+              - paid
+              - processing
+              - shipped
+              - cancelled
+              - delivered
+            description: Filter orders by status
+            example: "pending"
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+            maximum: 50
+            description: Show orders considering this limit
+            example: 1
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+            description: Show orders considering this offset
+            example: 1
+        - name: fromDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: toDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: minAmount
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - name: maxAmount
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Orders successfully returned
+          headers:
+            X-TotalCount:
+              description: Total number of orders matching the applied filters
+              schema:
+                type: integer
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Order"
+            application/xml:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Order"
+        "400":
+          description: Invalid filter parameters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Authentication credentials invalid or missing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "default":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    post:
+      tags:
+        - order
+      summary: Create a new order
+      description: Creates an order from the authenticated user's cart
+      operationId: createOrder
+      requestBody:
+        description: Create a new order
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrderInput"
+          application/xml:
+            schema:
+              $ref: "#/components/schemas/OrderInput"
+        required: true
+      responses:
+        "201":
+          description: Order created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "400":
+          description: Invalid input or empty cart
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Authentication credentials invalid or missing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Cart contains items with insufficient stock
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Validation exception
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "default":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /orders/{orderId}:
+    get:
+      tags:
+        - order
+      summary: Get order by Id
+      operationId: getOrderById
+      parameters:
+        - name: orderId
+          in: path
+          description: ID of order to return
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Order successfully returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "400":
+          description: Invalid orderId
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Not authorized to view this order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Authentication credentials invalid or missing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Order not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "default":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /orders/{orderId}/history:
+    get:
+      tags:
+        - order
+      summary: Get order status history
+      description: Returns the status change history for an order
+      operationId: getOrderHistory
+      parameters:
+        - name: orderId
+          in: path
+          description: ID of order
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+            maximum: 50
+            description: Show order status history entries considering this limit
+            example: 1
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+            description: Show order status history entries considering this offset
+            example: 1
+      responses:
+        "200":
+          description: OrderHistory successfully returned
+          headers:
+            X-TotalCount:
+              description: Total number of order status history entries matching the applied filters
+              schema:
+                type: integer
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OrderStatusHistory"
+            application/xml:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OrderStatusHistory"
+        "400":
+          description: Invalid orderId
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Authentication credentials invalid or missing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Not authorized to view this order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Order not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "default":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /orders/{orderId}/status:
+    patch:
+      tags:
+        - order
+      summary: Update order status
+      description: Updates the status of an order (manager role required)
+      operationId: updateOrderStatus
+      parameters:
+        - name: orderId
+          in: path
+          description: ID of order to update
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        description: Update the order status
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrderStatusInput"
+          application/xml:
+            schema:
+              $ref: "#/components/schemas/OrderStatusInput"
+        required: true
+      responses:
+        "200":
+          description: Order status updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "400":
+          description: Invalid orderId or status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Authentication credentials invalid or missing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Insufficient permissions (manager role required)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Order not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Invalid status transition
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "default":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /orders/{orderId}/cancel:
+    post:
+      tags:
+        - order
+      summary: Cancel an order
+      description: Cancels an order (client can only cancel before shipment)
+      operationId: cancelOrder
+      parameters:
+        - name: orderId
+          in: path
+          description: ID of order to cancel
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Order cancelled successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "400":
+          description: Invalid orderId
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Authentication credentials invalid or missing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Not authorized to cancel this order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Order not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Order cannot be cancelled in current status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "default":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /orders/{orderId}/payment:
+    post:
+      tags:
+        - order
+      summary: Create payment intent for order
+      description: |
+        Create a Stripe Payment Intent for the order's total amount.
+        Order must be in pending status.
+        Returns clientSecret for client-side payment collection.
+      operationId: createOrderPayment
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        description: Payment details
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PaymentIntentInput"
+        required: true
+      responses:
+        "200":
+          description: Payment intent created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  intentId:
+                    type: string
+                    example: "pi_1A2B3C4D5E6F"
+                  clientSecret:
+                    type: string
+                    example: "pi_1A2B3C4D5E6F_secret_abcd1234"
+                  amount:
+                    type: integer
+                    format: int64
+                    example: 2999
+                  currency:
+                    type: string
+                    example: "usd"
+        "400":
+          description: Invalid orderId
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Authentication credentials invalid or missing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Not authorized to pay for this order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Order not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Order is not in pending status or already paid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Validation exception
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "default":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /auth/signup:
+    post:
+      tags:
+        - user
+      summary: Create user.
+      description: Authenticate with email and password to create a new user
+      operationId: createUser
+      requestBody:
+        description: Created user object
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserInput"
+          application/xml:
+            schema:
+              $ref: "#/components/schemas/UserInput"
+      security: []
+      responses:
+        "201":
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/User"
+        "409":
+          description: This email already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "default":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /auth/signin:
+    post:
+      tags:
+        - user
+      summary: Logs user into the system
+      description: Authenticate with email and password to receive a JWT bearer token
+      operationId: loginUser
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+              required: [email, password]
+      responses:
+        "200":
+          description: Login successful
+          headers:
+            X-Expires-After:
+              description: Date in UTC when token expires
+              schema:
+                type: string
+                format: date-time
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: "#/components/schemas/User"
+                  token:
+                    type: string
+                    description: JWT bearer token for subsequent requests
+                required: [user, token]
+        "401":
+          description: Invalid email/password supplied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "default":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /auth/signout:
+    post:
+      tags:
+        - user
+      summary: Logs out current logged-in user
+      description: Invalidate the current session token
+      operationId: logoutUser
+      responses:
+        "200":
+          description: Successfully logged out
+        "401":
+          description: Authentication credentials invalid or missing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "default":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /auth/forgot-password:
+    post:
+      tags:
+        - user
+      summary: Send password reset email
+      description: Request a password reset link to be sent to the user's email
+      operationId: forgotPassword
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+              required: [email]
+      responses:
+        "200":
+          description: Password reset link sent to email
+        "default":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /auth/reset-password:
+    post:
+      tags:
+        - user
+      summary: Reset password with token
+      description: Complete password reset using the token from the email link
+      operationId: resetPassword
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+                  description: Reset token from email link
+                newPassword:
+                  type: string
+                  format: password
+              required: [token, newPassword]
+      responses:
+        "200":
+          description: Password reset successful
+        "400":
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "default":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /webhooks/stripe:
+    post:
+      tags:
+        - payment/webhook
+      summary: Stripe webhook endpoint
+      description: |
+        Receives Stripe events (payment_intent.succeeded, checkout.session.completed, etc.)
+
+        **Important:** This endpoint does not require Bearer token authentication.
+        Instead, Stripe signature verification is required via the Stripe-Signature header.
+        Server must verify the signature using your Stripe webhook secret.
+      security: []
+      parameters:
+        - name: Stripe-Signature
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Stripe-generated signature for request verification
+      responses:
+        "200":
+          description: Webhook received and processed
+        "400":
+          description: Invalid signature or malformed payload
+        "default":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
