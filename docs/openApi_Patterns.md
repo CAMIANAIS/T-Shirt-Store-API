@@ -54,6 +54,7 @@
 - **`required` keyword affects generated validator behavior** (JSON Schema core)
   - Impact: Missing `required` = generated code treats fields as optional even if needed
   - My fix: CartItemsInput, CartItemsInputById, OrderInput, OrderAddressInput, PaymentIntentInput all explicitly declare required fields
+  - Caught again in a Week 3 self-review audit: Category, Cart, Order, and OrderStatusHistory had no `required` array at all despite the rule being written down right here — added
 
 ### HTTP Standards (RFC 7235, RFC 7231)
 - **401 Unauthorized definition**: "request lacks valid authentication credentials for the target resource" (RFC 9110 §15.5.2)
@@ -82,8 +83,9 @@
 - **Consistent field naming within a single API**
   - camelCase throughout (not snake_case, not SCREAMING_CASE)
   - Status enums lowercase (active, pending, shipped)
-  - Path params specific (productId, orderId) not generic (id)
+  - Specific id naming everywhere an id is held, not just path params: path params (productId, orderId), but also body fields and query params (categoryId, not a bare category holding an int) — the rule is "any field holding an id gets an Id suffix," not "path params only"
   - Rationale: client code reads naturally; generated types are consistent
+  - Caught in the same Week 3 audit: ProductInput.category/ProductUpdateInput.category and the GET /products query param held a bare category id but weren't named categoryId — fixed. Product's read-side category field is correctly unrenamed, since it holds the full Category object there, not just an id.
   - Note: camelCase vs snake_case is genuinely a choice; Stripe and GitHub use snake_case successfully
 
 - **Success messages follow "{Resource} {verb} successfully" pattern**
