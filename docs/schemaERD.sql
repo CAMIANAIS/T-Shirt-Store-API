@@ -93,6 +93,7 @@ CREATE TABLE Product_Images (
 CREATE TABLE Orders(
     order_id SERIAL PRIMARY KEY,
     total_amount BIGINT NOT NULL CHECK (total_amount >= 0),
+    payment_method VARCHAR(50) NOT NULL CHECK (payment_method IN ('payment_link', 'payment_intent')),
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     user_id INTEGER not null,
@@ -150,13 +151,12 @@ CREATE TABLE Product_Variants (
         ON UPDATE CASCADE
 );
 
--- Order_Items: prevent same variant twice in one order
+-- Order_Items: prevent same variant twice in one order; immutable once created (see block_order_items_update trigger)
 CREATE TABLE Order_Items (
     order_items_id SERIAL PRIMARY KEY,
     quantity INTEGER NOT NULL CHECK (quantity > 0),
     price_at_purchase BIGINT NOT NULL CHECK (price_at_purchase >= 0),
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     order_id INTEGER not null,
     product_variant_id INTEGER not null,
     UNIQUE (order_id, product_variant_id),
@@ -207,7 +207,7 @@ CREATE TABLE Cart_Items(
 CREATE TABLE Payments(
     payment_id SERIAL PRIMARY KEY,
     amount BIGINT NOT NULL CHECK (amount > 0),
-	method_type VARCHAR(255) NOT NULL CHECK (method_type IN ('card','bank_account','apple_pay','google_pay','payment_link','payment_intent')),
+	method_type VARCHAR(255) NOT NULL CHECK (method_type IN ('card','bank_account','apple_pay','google_pay')),
     stripe_reference TEXT UNIQUE,
 	status VARCHAR(255) NOT NULL CHECK (status IN ('pending', 'completed', 'failed', 'refunded')),
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
@@ -261,6 +261,7 @@ WHERE is_default = TRUE;
 CREATE TABLE Auth_Tokens (
     token_id SERIAL PRIMARY KEY,
     token_hash TEXT NOT NULL UNIQUE,
+    type VARCHAR(20) NOT NULL CHECK (type IN ('session', 'refresh', 'reset')),
     jti TEXT UNIQUE,
     expires_at TIMESTAMPTZ NOT NULL,
     revoked BOOLEAN DEFAULT FALSE,
@@ -289,6 +290,27 @@ CREATE TABLE Order_Addresses (
     ON DELETE CASCADE,
   UNIQUE (order_id, type)
 );
+CREATE TABLE Stock_Notifications (
+    notification_id SERIAL PRIMARY KEY,
+    product_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (product_id, user_id),
+    CONSTRAINT fk_product FOREIGN KEY (product_id) REFERENCES Products(product_id) ON DELETE CASCADE,
+    CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE
+);
+
+CREATE TABLE Stripe_Events (
+  stripe_event_id TEXT PRIMARY KEY,
+  event_type VARCHAR(255) NOT NULL,
+  status VARCHAR(50) NOT NULL DEFAULT 'processing'
+    CHECK (status IN ('processing', 'processed', 'processing_failed')),
+  processing_started_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  processed_at TIMESTAMPTZ
+);
+CREATE INDEX idx_stripe_events_stuck ON Stripe_Events(status, processing_started_at);
+CREATE INDEX idx_stock_notifications_product_id ON Stock_Notifications(product_id);
+
 CREATE INDEX idx_orders_user_id ON Orders(user_id);
 CREATE INDEX idx_order_items_order_id ON Order_Items(order_id);
 CREATE INDEX idx_order_items_product_variant_id ON Order_Items(product_variant_id);
@@ -302,7 +324,7 @@ CREATE INDEX idx_auth_tokens_user_id ON Auth_Tokens(user_id);
 CREATE INDEX idx_auth_tokens_jti ON Auth_Tokens(jti);
 CREATE INDEX idx_order_addresses_order_id ON Order_Addresses(order_id);
 
-CREATE FUNCTION update_updated_at_column()
+CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
   NEW.updated_at = CURRENT_TIMESTAMP;
@@ -310,62 +332,69 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER update_roles_updated_at
+CREATE OR REPLACE TRIGGER update_roles_updated_at
 BEFORE UPDATE ON Roles
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER update_users_updated_at
+CREATE OR REPLACE TRIGGER update_users_updated_at
 BEFORE UPDATE ON Users
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER update_categories_updated_at
+CREATE OR REPLACE TRIGGER update_categories_updated_at
 BEFORE UPDATE ON Categories
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER update_products_updated_at
+CREATE OR REPLACE TRIGGER update_products_updated_at
 BEFORE UPDATE ON Products
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER update_product_images_updated_at
+CREATE OR REPLACE TRIGGER update_product_images_updated_at
 BEFORE UPDATE ON Product_Images
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER update_orders_updated_at
+CREATE OR REPLACE TRIGGER update_orders_updated_at
 BEFORE UPDATE ON Orders
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER update_product_variants_updated_at
+CREATE OR REPLACE TRIGGER update_product_variants_updated_at
 BEFORE UPDATE ON Product_Variants
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER update_order_items_updated_at
+CREATE OR REPLACE FUNCTION prevent_order_items_update()
+RETURNS TRIGGER AS $$
+BEGIN
+  RAISE EXCEPTION 'Order_Items are immutable once created (order_items_id %)', OLD.order_items_id;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE TRIGGER block_order_items_update
 BEFORE UPDATE ON Order_Items
 FOR EACH ROW
-EXECUTE FUNCTION update_updated_at_column();
+EXECUTE FUNCTION prevent_order_items_update();
 
-CREATE TRIGGER update_carts_updated_at
+CREATE OR REPLACE TRIGGER update_carts_updated_at
 BEFORE UPDATE ON Carts
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER update_cart_items_updated_at
+CREATE OR REPLACE TRIGGER update_cart_items_updated_at
 BEFORE UPDATE ON Cart_Items
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER update_payments_updated_at
+CREATE OR REPLACE TRIGGER update_payments_updated_at
 BEFORE UPDATE ON Payments
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER update_addresses_updated_at
+CREATE OR REPLACE TRIGGER update_addresses_updated_at
 BEFORE UPDATE ON Addresses
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
