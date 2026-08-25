@@ -1,0 +1,290 @@
+generator client {
+  provider        = "prisma-client"
+  output          = "../generated/prisma"
+  previewFeatures = ["partialIndexes"]
+  moduleFormat    = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model addresses {
+  address_id  Int       @id @default(autoincrement())
+  type        String    @db.VarChar(255)
+  street1     String    @db.VarChar(200)
+  street2     String    @db.VarChar(200)
+  street3     String?   @db.VarChar(200)
+  city        String    @db.VarChar(100)
+  postal_code String    @db.VarChar(10)
+  state       String    @db.VarChar(100)
+  country     String    @db.VarChar(50)
+  is_default  Boolean?  @default(false)
+  created_at  DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime? @default(now()) @db.Timestamptz(6)
+  deleted_at  DateTime? @db.Timestamptz(6)
+  user_id     Int
+  users       users     @relation(fields: [user_id], references: [user_id], onDelete: Cascade, map: "fk_users")
+
+  @@unique([user_id, type], map: "idx_one_default_addresses_per_type", where: raw("(is_default = true)"))
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model auth_tokens {
+  token_id   Int       @id @default(autoincrement())
+  token_hash String    @unique
+  type       String    @db.VarChar(20)
+  jti        String?   @unique
+  expires_at DateTime  @db.Timestamptz(6)
+  revoked    Boolean?  @default(false)
+  ip_address String?   @db.VarChar(45)
+  user_agent String?
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+  user_id    Int
+  users      users     @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_user")
+
+  @@index([jti], map: "idx_auth_tokens_jti")
+  @@index([user_id], map: "idx_auth_tokens_user_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model cart_items {
+  cart_items_id      Int              @id @default(autoincrement())
+  quantity           Int
+  price_at_purchase  BigInt
+  created_at         DateTime?        @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime?        @default(now()) @db.Timestamptz(6)
+  product_variant_id Int
+  cart_id            Int
+  carts              carts            @relation(fields: [cart_id], references: [cart_id], map: "fk_carts")
+  product_variants   product_variants @relation(fields: [product_variant_id], references: [product_variant_id], map: "fk_product_variant")
+
+  @@unique([cart_id, product_variant_id])
+  @@index([cart_id], map: "idx_cart_items_cart_id")
+  @@index([product_variant_id], map: "idx_cart_items_product_variant_id")
+}
+
+model carts {
+  cart_id    Int          @id @default(autoincrement())
+  created_at DateTime?    @default(now()) @db.Timestamptz(6)
+  updated_at DateTime?    @default(now()) @db.Timestamptz(6)
+  user_id    Int          @unique
+  cart_items cart_items[]
+  users      users        @relation(fields: [user_id], references: [user_id], onDelete: Cascade, map: "fk_bridge_users")
+}
+
+model categories {
+  category_id Int        @id @default(autoincrement())
+  name        String     @db.VarChar(50)
+  created_at  DateTime?  @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime?  @default(now()) @db.Timestamptz(6)
+  deleted_at  DateTime?  @db.Timestamptz(6)
+  products    products[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model order_addresses {
+  order_address_id Int       @id @default(autoincrement())
+  order_id         Int
+  type             String?   @db.VarChar(50)
+  street1          String    @db.VarChar(200)
+  street2          String    @db.VarChar(200)
+  street3          String?   @db.VarChar(200)
+  city             String    @db.VarChar(100)
+  postal_code      String    @db.VarChar(10)
+  state            String    @db.VarChar(100)
+  country          String    @db.VarChar(50)
+  created_at       DateTime? @default(now()) @db.Timestamptz(6)
+  orders           orders    @relation(fields: [order_id], references: [order_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_order")
+
+  @@unique([order_id, type])
+  @@index([order_id], map: "idx_order_addresses_order_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model order_items {
+  order_items_id     Int              @id @default(autoincrement())
+  quantity           Int
+  price_at_purchase  BigInt
+  created_at         DateTime?        @default(now()) @db.Timestamptz(6)
+  order_id           Int
+  product_variant_id Int
+  orders             orders           @relation(fields: [order_id], references: [order_id], onDelete: Cascade, map: "fk_orders")
+  product_variants   product_variants @relation(fields: [product_variant_id], references: [product_variant_id], map: "fk_product_variant")
+
+  @@unique([order_id, product_variant_id])
+  @@index([order_id], map: "idx_order_items_order_id")
+  @@index([product_variant_id], map: "idx_order_items_product_variant_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model order_status_history {
+  order_status_history_id Int       @id @default(autoincrement())
+  status                  String    @db.VarChar(255)
+  created_at              DateTime? @default(now()) @db.Timestamptz(6)
+  changed_by_type         String?   @db.VarChar(10)
+  order_id                Int
+  changed_by_user_id      Int?
+  changed_by_email        String?
+  users                   users?    @relation(fields: [changed_by_user_id], references: [user_id], map: "fk_bridge_users")
+  orders                  orders    @relation(fields: [order_id], references: [order_id], onDelete: Cascade, map: "fk_orders")
+
+  @@index([order_id], map: "idx_order_status_history_order_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model orders {
+  order_id             Int                    @id @default(autoincrement())
+  total_amount         BigInt
+  payment_method       String                 @db.VarChar(50)
+  created_at           DateTime?              @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime?              @default(now()) @db.Timestamptz(6)
+  user_id              Int
+  order_addresses      order_addresses[]
+  order_items          order_items[]
+  order_status_history order_status_history[]
+  users                users                  @relation(fields: [user_id], references: [user_id], map: "fk_bridge_users")
+  payments             payments[]
+
+  @@index([user_id], map: "idx_orders_user_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model payments {
+  payment_id       Int       @id @default(autoincrement())
+  amount           BigInt
+  method_type      String    @db.VarChar(255)
+  stripe_reference String?   @unique
+  status           String    @db.VarChar(255)
+  created_at       DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime? @default(now()) @db.Timestamptz(6)
+  order_id         Int
+  orders           orders    @relation(fields: [order_id], references: [order_id], map: "fk_orders")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model prices_history {
+  prices_history_id  Int              @id @default(autoincrement())
+  price              BigInt
+  effective_from     DateTime         @default(now()) @db.Timestamptz(6)
+  created_at         DateTime?        @default(now()) @db.Timestamptz(6)
+  product_variant_id Int
+  product_variants   product_variants @relation(fields: [product_variant_id], references: [product_variant_id], map: "fk_product_variant")
+
+  @@index([product_variant_id], map: "idx_price_history_product_variant_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model product_images {
+  image_id      Int       @id @default(autoincrement())
+  bucket_name   String    @db.VarChar(100)
+  filename      String    @db.VarChar(255)
+  extension     String    @db.VarChar(255)
+  display_order Int
+  alt_text      String?   @db.VarChar(500)
+  created_at    DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime? @default(now()) @db.Timestamptz(6)
+  product_id    Int
+  products      products  @relation(fields: [product_id], references: [product_id], onDelete: Cascade, map: "fk_product")
+
+  @@index([product_id], map: "idx_product_images_product_id")
+}
+
+model product_likes {
+  product_id Int
+  user_id    Int
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+  products   products  @relation(fields: [product_id], references: [product_id], onDelete: Cascade, map: "fk_bridge_product")
+  users      users     @relation(fields: [user_id], references: [user_id], onDelete: Cascade, map: "fk_bridge_users")
+
+  @@id([user_id, product_id])
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model product_variants {
+  product_variant_id Int              @id @default(autoincrement())
+  size               String           @db.VarChar(10)
+  color              String
+  stock_quantity     Int
+  sku_code           String           @unique @db.VarChar(100)
+  status             String           @default("active") @db.VarChar(20)
+  created_at         DateTime?        @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime?        @default(now()) @db.Timestamptz(6)
+  product_id         Int
+  cart_items         cart_items[]
+  order_items        order_items[]
+  prices_history     prices_history[]
+  products           products         @relation(fields: [product_id], references: [product_id], map: "fk_product")
+
+  @@index([product_id], map: "idx_product_variant_product_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model products {
+  product_id          Int                   @id @default(autoincrement())
+  name                String                @db.VarChar(200)
+  description         String
+  status              String                @db.VarChar(50)
+  created_at          DateTime?             @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime?             @default(now()) @db.Timestamptz(6)
+  deleted_at          DateTime?             @db.Timestamptz(6)
+  category_id         Int
+  product_images      product_images[]
+  product_likes       product_likes[]
+  product_variants    product_variants[]
+  categories          categories            @relation(fields: [category_id], references: [category_id], map: "fk_category")
+  stock_notifications stock_notifications[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model roles {
+  role_id    Int       @id @default(autoincrement())
+  name       String    @db.VarChar(255)
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at DateTime? @default(now()) @db.Timestamptz(6)
+  users      users[]
+}
+
+model stock_notifications {
+  notification_id Int       @id @default(autoincrement())
+  product_id      Int
+  user_id         Int
+  created_at      DateTime? @default(now()) @db.Timestamptz(6)
+  products        products  @relation(fields: [product_id], references: [product_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_product")
+  users           users     @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_user")
+
+  @@unique([product_id, user_id])
+  @@index([product_id], map: "idx_stock_notifications_product_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model stripe_events {
+  stripe_event_id       String    @id
+  event_type            String    @db.VarChar(255)
+  status                String    @default("processing") @db.VarChar(50)
+  processing_started_at DateTime  @default(now()) @db.Timestamptz(6)
+  processed_at          DateTime? @db.Timestamptz(6)
+
+  @@index([status, processing_started_at], map: "idx_stripe_events_stuck")
+}
+
+model users {
+  user_id              Int                    @id @default(autoincrement())
+  username             String                 @unique @db.VarChar(50)
+  email                String                 @unique @db.VarChar(255)
+  birthdate            DateTime?              @db.Timestamptz(6)
+  created_at           DateTime?              @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime?              @default(now()) @db.Timestamptz(6)
+  role_id              Int
+  password_hash        String
+  deleted_at           DateTime?              @db.Timestamptz(6)
+  addresses            addresses[]
+  auth_tokens          auth_tokens[]
+  carts                carts?
+  order_status_history order_status_history[]
+  orders               orders[]
+  product_likes        product_likes[]
+  stock_notifications  stock_notifications[]
+  roles                roles                  @relation(fields: [role_id], references: [role_id], map: "fk_bridge_roles")
+}

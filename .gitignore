@@ -56,3 +56,5 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 # Nerdery program material + personal working notes (not project artifacts)
 /guidelines/
+
+/generated/prisma

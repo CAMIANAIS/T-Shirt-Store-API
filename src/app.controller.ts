@@ -14,7 +14,7 @@ export class AppController {
     return this.appService.getHello();
   }
   @Get('categories')
-  findAll(): categoryType {
+  async findAll(): Promise<categoryType> {
     return this.categoriesService.findAll();
   }
 }
