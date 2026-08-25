@@ -23,6 +23,13 @@ front-load everything.
 - The husky pre-commit hook enforces this locally before a commit can even be created; GitHub
   Actions CI enforces it again on push/PR to `main`, regardless of what ran locally.
 
+## Commit messages
+
+- Conventional Commits (https://www.conventionalcommits.org/en/v1.0.0/), starting 2026-08-25.
+  Enforced, not just followed: a `commit-msg` husky hook running `commitlint` rejects a
+  non-conforming message outright — verified it actually blocks one, not just that it's
+  configured.
+
 ## Architecture
 
 - Controllers don't run queries; services don't reach for the request object. Both "work" in
