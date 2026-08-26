@@ -5,6 +5,8 @@ import { CategoriesModule } from './categories/categories.module';
 import { AppService } from './app.service';
 import { validateConfig } from './config/validate-config';
 import { PrismaModule } from './prisma/prisma.module';
+import { AuthModule } from './auth/auth.module';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
@@ -14,6 +16,8 @@ import { PrismaModule } from './prisma/prisma.module';
     }),
     CategoriesModule,
     PrismaModule,
+    AuthModule,
+    UsersModule,
   ],
   controllers: [AppController],
   providers: [AppService],
