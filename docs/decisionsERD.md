@@ -49,12 +49,17 @@ One ambiguity worth resolving intentionally, not accidentally: section 4 lists "
 
 Not a gap: no promo-code table — section 13 is explicitly under "Optional Features," so its absence isn't a completeness problem. Worth a one-line note in decisions.md that it's deliberately deferred, same as you did for the others.
 
-11. Auth_Tokens gets a `type` column (session/refresh/reset), NOT NULL
+11. Auth_Tokens gets a `type` column (refresh/reset), NOT NULL
 Decision: reuse Auth_Tokens for password-reset tokens instead of a separate table — it already had
 token_hash/expires_at/revoked/jti/user_id, which is most of what a reset token needs. Added a
 NOT NULL type CHECK enum so a token's purpose is never ambiguous; without it, "any live token for
-this user" could accidentally match a session token when only a reset token should count, or
+this user" could accidentally match a refresh token when only a reset token should count, or
 vice versa.
+
+Update (Week 3, Day 2): dropped `session` from the enum. Access tokens ended up as stateless
+signed JWTs, never persisted, so no row was ever going to carry that type — keeping it would have
+left the schema documenting a token kind that doesn't exist. Only `refresh` (opaque random token,
+SHA-256 hash, looked up directly by `token_hash`) and `reset` actually get rows.
 
 12a. Order_Items — no updated_at, blocked from UPDATE entirely
 Decision: once an order is placed, its line items are locked in — quantity and price_at_purchase
