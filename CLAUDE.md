@@ -40,6 +40,34 @@ front-load everything.
 - Don't instantiate external clients ad hoc inside a method (e.g. `new Stripe(process.env.KEY)`
   inline). Wire them as providers so they're swappable/mockable, same reasoning as Prisma.
 
+## Auth & validation (established Week 3, Day 2)
+
+- **Request validation**: every module's request bodies get a typed DTO class under
+  `src/<module>/dto/*.dto.ts` using `class-validator` decorators (same pattern as
+  `EnvironmentVariables`), not a bare `@Body()` with no type. A global `ValidationPipe` is wired
+  in `main.ts` with `whitelist: true` + `forbidNonWhitelisted: true` — an unexpected field (e.g.
+  a client sneaking a `role_id` into a signup body) gets the whole request rejected, not silently
+  stripped. This is the enforcement mechanism behind the client-supplied-userId/role rule above,
+  not just a nice-to-have.
+- **Access tokens**: short-lived, stateless, signed JWTs (`@nestjs/jwt`, secret from
+  `ConfigService`/`EnvironmentVariables`, never hardcoded — delete any `constants.ts` with a
+  literal secret on sight, that's the NestJS tutorial's own placeholder). Payload fields come from
+  a server-side DB lookup after credentials are verified, never from client-supplied data.
+- **Refresh tokens**: opaque random bytes, hashed with **SHA-256** (not bcrypt) and stored in
+  `Auth_Tokens` (`type = 'refresh'`), looked up directly via `WHERE token_hash = sha256(token)`.
+  bcrypt is the wrong tool here — it's salted/non-deterministic (breaks a direct hash lookup) and
+  its slow-hashing purpose (brute-force resistance) doesn't apply to a high-entropy random token
+  the way it does to a low-entropy human password. Revocation (logout, password change) works by
+  flipping `revoked` on the DB row — a stateless JWT alone can't be revoked before it expires,
+  which is the actual reason the refresh token needs a DB-backed record at all. `Auth_Tokens.jti`
+  exists in the schema but is currently unused/dead weight — only relevant if a per-device
+  "log out this session" feature gets built later.
+- **Reference/lookup table seed data** (e.g. `Roles`): baked into `docs/schemaERD.sql` itself as
+  an idempotent `INSERT ... ON CONFLICT (col) DO NOTHING` at the end of the file, matching the
+  existing "rebuild from the script" pattern rather than a separate seed mechanism. Requires a
+  `UNIQUE` constraint on the conflict target column — a `CHECK` restricting allowed values is not
+  a substitute for `UNIQUE` and `ON CONFLICT` will fail without it.
+
 ## API design conventions (full rationale in `docs/openApi_Patterns.md`)
 
 - Status codes: `422` for structurally invalid requests (missing field, wrong type); `409` for
