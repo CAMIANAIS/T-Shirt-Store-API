@@ -2,10 +2,9 @@
 
 CREATE TABLE Roles (
     role_id SERIAL PRIMARY KEY,
-	name VARCHAR(255) NOT NULL CHECK (name IN ( 'manager', 'client', 'delivery_person')),
+    name VARCHAR(255) NOT NULL UNIQUE CHECK (name IN ('manager', 'client', 'delivery_person')),
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-
 );
 -- Child of Roles table with Foreign Key
 CREATE TABLE Users (
@@ -261,7 +260,7 @@ WHERE is_default = TRUE;
 CREATE TABLE Auth_Tokens (
     token_id SERIAL PRIMARY KEY,
     token_hash TEXT NOT NULL UNIQUE,
-    type VARCHAR(20) NOT NULL CHECK (type IN ('session', 'refresh', 'reset')),
+    type VARCHAR(20) NOT NULL CHECK (type IN ('refresh', 'reset')),
     jti TEXT UNIQUE,
     expires_at TIMESTAMPTZ NOT NULL,
     revoked BOOLEAN DEFAULT FALSE,
@@ -398,3 +397,10 @@ CREATE OR REPLACE TRIGGER update_addresses_updated_at
 BEFORE UPDATE ON Addresses
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
+
+-- At the end of schemaERD.sql
+INSERT INTO Roles (name) VALUES
+  ('manager'),
+  ('client'),
+  ('delivery_person')
+ON CONFLICT (name) DO NOTHING;
