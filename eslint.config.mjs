@@ -32,4 +32,12 @@ export default tseslint.config(
       "prettier/prettier": ["error", { endOfLine: "auto" }],
     },
   },
+  {
+    files: ['**/*.spec.ts'],
+    rules: {
+      // Jest mocks are referenced as bare values in `expect(...)` assertions,
+      // which this rule otherwise flags as an unbound-`this` risk.
+      '@typescript-eslint/unbound-method': 'off',
+    },
+  },
 );
