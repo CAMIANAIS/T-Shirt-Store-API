@@ -30,6 +30,9 @@ describe('AuthService', () => {
             roles: {
               findUnique: jest.fn(),
             },
+            auth_tokens: {
+              create: jest.fn(),
+            },
           },
         },
       ],
@@ -62,10 +65,10 @@ describe('AuthService', () => {
     // Act
     const result = await service.signIn(mockUser.email, plainPassword);
 
-    // 1. does `result` match that shape, using mockToken?
-    // 2. was userByEmail called with the right email?
-    // 3. was signAsync called with the payload signIn actually builds?
-    expect(result).toEqual({ access_token: mockToken });
+    expect(result).toEqual({
+      access_token: mockToken,
+      refresh_token: expect.any(String),
+    });
     expect(usersService.userByEmail).toHaveBeenCalledWith('test@example.com');
     expect(jwtService.signAsync).toHaveBeenCalled();
   });
@@ -123,7 +126,10 @@ describe('AuthService', () => {
 
     const result = await service.signUp(dto);
 
-    expect(result).toEqual({ access_token: mockToken });
+    expect(result).toEqual({
+      access_token: mockToken,
+      refresh_token: expect.any(String),
+    });
     expect(usersService.createUser).toHaveBeenCalledWith(
       dto.email,
       dto.username,

@@ -8,6 +8,7 @@ import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import { SignUpDto } from './dto/signup.dto';
 import { PrismaService } from '../prisma/prisma.service';
+import * as crypto from 'crypto';
 const saltOrRounds = 10;
 
 @Injectable()
@@ -26,7 +27,34 @@ export class AuthService {
     return bcrypt.compare(plaintext, hash);
   }
 
-  async signIn(email: string, pass: string): Promise<{ access_token: string }> {
+  private hashtoken(token: string): string {
+    return crypto.createHash('sha256').update(token).digest('hex');
+  }
+  private generateRefreshToken(): string {
+    return crypto.randomBytes(32).toString('hex');
+  }
+  async issueRefreshToken(userId: number): Promise<string> {
+    const token = this.generateRefreshToken();
+    const tokenHash = this.hashtoken(token);
+
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
+
+    await this.prismaService.auth_tokens.create({
+      data: {
+        user_id: userId,
+        token_hash: tokenHash,
+        type: 'refresh',
+        revoked: false,
+        expires_at: expiresAt,
+      },
+    });
+    return token;
+  }
+  async signIn(
+    email: string,
+    pass: string,
+  ): Promise<{ access_token: string; refresh_token: string }> {
     const user = await this.userService.userByEmail(email);
     if (user === null) {
       throw new UnauthorizedException();
@@ -39,12 +67,14 @@ export class AuthService {
       throw new UnauthorizedException();
     }
     const payload = { sub: user.user_id, email: user.email };
-    return {
-      access_token: await this.jwtService.signAsync(payload),
-    };
+    const access_token = await this.jwtService.signAsync(payload);
+    const refresh_token = await this.issueRefreshToken(user.user_id);
+    return { access_token, refresh_token };
   }
 
-  async signUp(dto: SignUpDto): Promise<{ access_token: string }> {
+  async signUp(
+    dto: SignUpDto,
+  ): Promise<{ access_token: string; refresh_token: string }> {
     const existingUser = await this.userService.userByEmail(dto.email);
     if (existingUser) {
       throw new ConflictException('Email already registered');
@@ -68,8 +98,20 @@ export class AuthService {
     );
 
     const payload = { sub: user.user_id, username: user.username };
-    return {
-      access_token: await this.jwtService.signAsync(payload),
-    };
+    const access_token = await this.jwtService.signAsync(payload);
+    const refresh_token = await this.issueRefreshToken(user.user_id);
+    return { access_token, refresh_token };
+  }
+
+  async signOut(userId: number, token: string): Promise<void> {
+    const tokenHash = this.hashtoken(token);
+
+    await this.prismaService.auth_tokens.update({
+      where: {
+        token_hash: tokenHash,
+        user_id: userId,
+      },
+      data: { revoked: true },
+    });
   }
 }

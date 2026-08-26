@@ -38,6 +38,8 @@ export default tseslint.config(
       // Jest mocks are referenced as bare values in `expect(...)` assertions,
       // which this rule otherwise flags as an unbound-`this` risk.
       '@typescript-eslint/unbound-method': 'off',
+      // expect.any(...) etc. are typed `any` by @types/jest.
+      '@typescript-eslint/no-unsafe-assignment': 'off',
     },
   },
 );
