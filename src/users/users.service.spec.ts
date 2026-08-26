@@ -31,7 +31,6 @@ describe('UsersService', () => {
   });
 
   it('userByEmail should return user when found', async () => {
-    // Arrange
     const mockUser = {
       user_id: 1,
       email: 'test@example.com',
@@ -41,10 +40,8 @@ describe('UsersService', () => {
     };
     (prismaService.users.findUnique as jest.Mock).mockResolvedValue(mockUser);
 
-    // Act
     const result = await service.userByEmail('test@example.com');
 
-    // Assert
     expect(result).toEqual(mockUser);
     expect(prismaService.users.findUnique).toHaveBeenCalledWith({
       where: { email: 'test@example.com' },
@@ -52,18 +49,14 @@ describe('UsersService', () => {
   });
 
   it('userByEmail should return null when not found', async () => {
-    // Arrange
     (prismaService.users.findUnique as jest.Mock).mockResolvedValue(null);
 
-    // Act
     const result = await service.userByEmail('unknown@example.com');
 
-    // Assert
     expect(result).toBeNull();
   });
 
   it('createUser should create and return user', async () => {
-    // Arrange
     const mockUser = {
       user_id: 1,
       email: 'new@example.com',
@@ -74,7 +67,6 @@ describe('UsersService', () => {
     };
     (prismaService.users.create as jest.Mock).mockResolvedValue(mockUser);
 
-    // Act
     const result = await service.createUser(
       'new@example.com',
       'newuser',
@@ -83,7 +75,6 @@ describe('UsersService', () => {
       '2000-01-01',
     );
 
-    // Assert
     expect(result).toEqual(mockUser);
     expect(prismaService.users.create).toHaveBeenCalledWith({
       data: {
