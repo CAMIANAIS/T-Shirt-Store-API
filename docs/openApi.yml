@@ -307,6 +307,11 @@ components:
           type: integer
           description: Set a category for this product
           example: 1
+        variants:
+          type: array
+          description: Optional variants to create alongside the product in one call
+          items:
+            $ref: "#/components/schemas/ProductVariantInput"
     ProductUpdateInput:
       type: object
       properties:

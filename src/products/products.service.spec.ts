@@ -1,0 +1,185 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import { ProductsService } from './products.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { ProductInputDto } from './dto/createProduct.dto';
+
+describe('ProductsService', () => {
+  let service: ProductsService;
+  let prismaService: PrismaService;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        ProductsService,
+        {
+          provide: PrismaService,
+          useValue: {
+            products: {
+              findMany: jest.fn(),
+              create: jest.fn(),
+            },
+          },
+        },
+      ],
+    }).compile();
+
+    service = module.get<ProductsService>(ProductsService);
+    prismaService = module.get<PrismaService>(PrismaService);
+  });
+
+  it('should be defined', () => {
+    expect(service).toBeDefined();
+  });
+
+  // findAll cases
+  it('findAll maps Prisma rows to the camelCase Product shape', async () => {
+    // Arrange
+    const mockRow = {
+      product_id: 1,
+      name: 'summer-tshirt',
+      description: 'long sleeves, 100% cotton',
+      status: 'active',
+      created_at: new Date('2026-01-01'),
+      updated_at: new Date('2026-01-02'),
+      deleted_at: null,
+      category_id: 5,
+    };
+    const findManySpy = jest
+      .spyOn(prismaService.products, 'findMany')
+      .mockResolvedValue([mockRow]);
+
+    // Act
+    const result = await service.findAll();
+
+    // Assert — your turn. Does `result[0]` have the camelCase fields
+    // (productId, categoryId, createdAt...) with the right values?
+    expect(result).toEqual([
+      {
+        productId: 1,
+        name: 'summer-tshirt',
+        description: 'long sleeves, 100% cotton',
+        status: 'active',
+        createdAt: new Date('2026-01-01'),
+        updatedAt: new Date('2026-01-02'),
+        deletedAt: null,
+        categoryId: 5,
+      },
+    ]);
+    expect(findManySpy).toHaveBeenCalled();
+  });
+
+  it('findAll passes categoryId/limit/offset through to Prisma correctly', async () => {
+    // Arrange
+    const findManySpy = jest
+      .spyOn(prismaService.products, 'findMany')
+      .mockResolvedValue([]);
+
+    // Act
+    await service.findAll(5, 10, 20);
+
+    // Assert — your turn. Was findMany called with categoryId mapped to
+    // `category_id: 5`, `take: 10`, `skip: 20`, and `deleted_at: null`?
+    expect(findManySpy).toHaveBeenCalledWith({
+      where: {
+        category_id: 5,
+        deleted_at: null,
+      },
+      take: 10,
+      skip: 20,
+    });
+  });
+
+  // create cases
+  it('create creates a product without variants when none are provided', async () => {
+    // Arrange
+    const dto = {
+      name: 'summer-tshirt',
+      description: 'long sleeves, 100% cotton',
+      status: 'active',
+      categoryId: 5,
+    };
+    const mockCreated = {
+      product_id: 1,
+      name: dto.name,
+      description: dto.description,
+      status: dto.status,
+      created_at: new Date(),
+      updated_at: new Date(),
+      deleted_at: null,
+      category_id: dto.categoryId,
+    };
+    const createSpy = jest
+      .spyOn(prismaService.products, 'create')
+      .mockResolvedValue(mockCreated);
+
+    // Act
+    const result = await service.create(dto as ProductInputDto);
+
+    // Assert — your turn. Was `create` called with the right `data` shape
+    // (no `product_variants` key at all, since dto.variants is undefined)?
+    expect(result).toEqual({
+      productId: 1,
+      name: dto.name,
+      description: dto.description,
+      status: dto.status,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      deletedAt: null,
+      categoryId: dto.categoryId,
+    });
+    expect(createSpy).toHaveBeenCalled();
+  });
+
+  it('create passes a nested product_variants.create when variants are provided', async () => {
+    // Arrange
+    const dto = {
+      name: 'summer-tshirt',
+      description: 'long sleeves, 100% cotton',
+      status: 'active',
+      categoryId: 5,
+      variants: [
+        { size: 'M', color: 'red', stockQuantity: 10, skuCode: 'TSH-RED-MD' },
+      ],
+    };
+    const mockCreated = {
+      product_id: 1,
+      name: dto.name,
+      description: dto.description,
+      status: dto.status,
+      created_at: new Date(),
+      updated_at: new Date(),
+      deleted_at: null,
+      category_id: dto.categoryId,
+    };
+    const createSpy = jest
+      .spyOn(prismaService.products, 'create')
+      .mockResolvedValue(mockCreated);
+
+    // Act
+    await service.create(dto as ProductInputDto);
+
+    // Assert — your turn. Was `create` called with a
+    // `product_variants: { create: [...] }` key, using snake_case field
+    // names (stock_quantity, sku_code) mapped from the camelCase dto?
+    expect(createSpy).toHaveBeenCalledWith({
+      data: {
+        name: dto.name,
+        description: dto.description,
+        status: dto.status,
+        category_id: dto.categoryId,
+        ...(dto.variants && {
+          product_variants: {
+            create: [
+              {
+                size: 'M',
+                color: 'red',
+                stock_quantity: 10,
+                sku_code: 'TSH-RED-MD',
+              },
+            ],
+          },
+        }),
+      },
+    });
+  });
+});
