@@ -23,7 +23,7 @@ interface JwtPayload {
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
-
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   @Post('signin')
   signIn(@Body() signInDto: SignInDto) {
@@ -41,6 +41,7 @@ export class AuthController {
   signOut(@CurrentUser() user: JwtPayload, @Body() signOutDto: SignOutDto) {
     return this.authService.signOut(user.sub, signOutDto.token);
   }
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   @Post('forgotpassword')
   forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
