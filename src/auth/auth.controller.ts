@@ -14,6 +14,7 @@ import { CurrentUser } from './decorators/current-user.decorator';
 import { JWTAuthGuard } from './guards/jwt-auth.guard';
 import { ForgotPasswordDto } from './dto/forgotPassword.dto';
 import { ResetPasswordDto } from './dto/resetpassword.dto';
+import { Throttle } from '@nestjs/throttler';
 
 interface JwtPayload {
   sub: number;
@@ -28,6 +29,8 @@ export class AuthController {
   signIn(@Body() signInDto: SignInDto) {
     return this.authService.signIn(signInDto.email, signInDto.password);
   }
+
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
   @Post('signup')
   signUp(@Body() signUpDto: SignUpDto) {
     return this.authService.signUp(signUpDto);
@@ -43,6 +46,8 @@ export class AuthController {
   forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
     return this.authService.forgotPassword(forgotPasswordDto.email);
   }
+
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   @Post('resetpassword')
   resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
