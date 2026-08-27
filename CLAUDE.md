@@ -22,6 +22,12 @@ front-load everything.
   chained to stop at the first failure.
 - The husky pre-commit hook enforces this locally before a commit can even be created; GitHub
   Actions CI enforces it again on push/PR to `main`, regardless of what ran locally.
+- `eslint.config.mjs` has a `**/*.spec.ts`-scoped override turning off `@typescript-eslint/
+  unbound-method` and `@typescript-eslint/no-unsafe-assignment`. Both are known false positives
+  in Jest test files specifically — `expect(mock.method).toHaveBeenCalledWith(...)` is the
+  standard Jest pattern and isn't a real unbound-`this` risk, and `expect.any(...)` is typed
+  `any` by `@types/jest` itself. Production code still gets full strict checking; this override
+  is test-file-only.
 
 ## Commit messages
 
@@ -67,6 +73,21 @@ front-load everything.
   existing "rebuild from the script" pattern rather than a separate seed mechanism. Requires a
   `UNIQUE` constraint on the conflict target column — a `CHECK` restricting allowed values is not
   a substitute for `UNIQUE` and `ON CONFLICT` will fail without it.
+- **Password-reset tokens** reuse `Auth_Tokens` (`type = 'reset'`) rather than a separate table —
+  same shape as a refresh token (opaque random bytes, SHA-256 hashed, looked up by
+  `token_hash`), just a 15-minute expiry instead of 7 days. `resetPassword` revokes the reset
+  token it used once the password update succeeds, so it can't be replayed. It does **not**
+  currently revoke the user's other active refresh tokens (sessions) on a successful reset —
+  known gap, flagged for a future fix, not yet built.
+- **Account-enumeration resistance on auth endpoints**: `forgotPassword` returns the exact same
+  response whether or not the email is registered — no early-return, no distinguishing
+  exception, so a client (or attacker) can't learn which emails have accounts. The reset token
+  itself is only ever generated/stored when the user *does* exist; nothing is created on the
+  not-found path. `signUp`'s duplicate-email case is a deliberate exception to this: it stays a
+  `409 ConflictException` (matches the status-code convention above, keeps the API debuggable)
+  rather than going fully generic, because a full fix there would require email-verification
+  infra this app doesn't have. Mitigate that specific gap with rate limiting on `/auth/signup`,
+  not response-shape hiding.
 
 ## API design conventions (full rationale in `docs/openApi_Patterns.md`)
 

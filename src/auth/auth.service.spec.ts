@@ -5,6 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import { Prisma } from 'generated/prisma/browser';
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -32,6 +33,11 @@ describe('AuthService', () => {
             },
             auth_tokens: {
               create: jest.fn(),
+              findFirst: jest.fn(),
+              update: jest.fn(),
+            },
+            users: {
+              update: jest.fn(),
             },
           },
         },
@@ -140,7 +146,6 @@ describe('AuthService', () => {
   });
 
   it('signUp should throw ConflictException when email already exists', async () => {
-    // Arrange
     const dto = {
       email: 'existing@example.com',
       username: 'someone',
@@ -156,5 +161,104 @@ describe('AuthService', () => {
 
     // Act & Assert
     await expect(service.signUp(dto)).rejects.toThrow(ConflictException);
+  });
+
+  // forgotPassword cases
+  it('forgotPassword creates a reset token when the user exists', async () => {
+    // Arrange
+    const mockUser = { user_id: 1, email: 'test@example.com' };
+    (usersService.userByEmail as jest.Mock).mockResolvedValue(mockUser);
+
+    const createSpy = jest
+      .spyOn(prismaService.auth_tokens, 'create')
+      .mockResolvedValue({
+        token_id: 1,
+        user_id: 1,
+        token_hash: expect.any(String),
+        type: 'reset',
+        revoked: false,
+        expires_at: expect.any(Date),
+        jti: null,
+        ip_address: null,
+        user_agent: null,
+        created_at: expect.any(Date),
+      });
+
+    // Act
+    await service.forgotPassword(mockUser.email);
+
+    // Assert — your turn. Was auth_tokens.create called? With what shape
+    // (user_id, type: 'reset')? Check the `data` argument it was called with.
+    expect(createSpy).toHaveBeenCalledWith({
+      data: {
+        user_id: mockUser.user_id,
+        token_hash: expect.any(String),
+        type: 'reset',
+        revoked: false,
+        expires_at: expect.any(Date),
+      },
+    });
+    expect(createSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('forgotPassword does nothing when the email is unknown, but does not throw', async () => {
+    // Arrange
+    (usersService.userByEmail as jest.Mock).mockResolvedValue(null);
+    const createSpy = jest.spyOn(prismaService.auth_tokens, 'create');
+    // Act
+    const act = service.forgotPassword('unknown@example.com');
+
+    // Assert — your turn. Does it reject? Was auth_tokens.create called?
+    await expect(act).resolves.toBeUndefined();
+    expect(createSpy).not.toHaveBeenCalled();
+  });
+
+  // resetPassword cases
+  it('resetPassword updates the password and revokes the token when valid', async () => {
+    // Arrange
+    const mockResetToken = {
+      user_id: 1,
+      token_hash: 'irrelevant-here',
+      type: 'reset',
+      revoked: false,
+    };
+    (prismaService.auth_tokens.findFirst as jest.Mock).mockResolvedValue(
+      mockResetToken,
+    );
+    const updateUserSpy = jest
+      .spyOn(prismaService.users, 'update')
+      .mockResolvedValue({} as Prisma.usersModel);
+    const updateTokenSpy = jest
+      .spyOn(prismaService.auth_tokens, 'update')
+      .mockResolvedValue({} as Prisma.auth_tokensModel);
+    // Act
+    await service.resetPassword('some-reset-token', 'newPassword123');
+
+    // Assert — your turn. Was users.update called with the right user_id?
+    // Was auth_tokens.update called to set revoked: true?
+    expect(updateUserSpy).toHaveBeenNthCalledWith(1, {
+      where: { user_id: mockResetToken.user_id },
+      data: { password_hash: expect.any(String) },
+    });
+    expect(updateTokenSpy).toHaveBeenNthCalledWith(1, {
+      where: {
+        token_hash: expect.any(String), // hashed version of 'some-reset-token'
+        user_id: mockResetToken.user_id,
+      },
+      data: { revoked: true },
+    });
+  });
+
+  it('resetPassword throws when the token is missing, expired, or revoked', async () => {
+    // Arrange
+    (prismaService.auth_tokens.findFirst as jest.Mock).mockResolvedValue(null);
+    const updateUsersSpy = jest.spyOn(prismaService.users, 'update');
+    // Act
+    const act = service.resetPassword('bad-token', 'newPassword123');
+
+    // Assert — your turn. Should reject with UnauthorizedException. Also:
+    // should users.update have been called in this case?
+    await expect(act).rejects.toThrow(UnauthorizedException);
+    expect(updateUsersSpy).not.toHaveBeenCalled();
   });
 });
