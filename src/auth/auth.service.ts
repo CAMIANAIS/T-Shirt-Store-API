@@ -114,4 +114,69 @@ export class AuthService {
       data: { revoked: true },
     });
   }
+  // Same response whether or not the email exists, to avoid leaking which
+  // emails are registered. Token is logged, not returned — no email system
+  // yet to actually deliver it.
+  async forgotPassword(email: string): Promise<void> {
+    const user = await this.userService.userByEmail(email);
+
+    const token = this.generateRefreshToken();
+    const tokenHash = this.hashtoken(token);
+
+    const expiresAt = new Date();
+    expiresAt.setMinutes(expiresAt.getMinutes() + 15);
+    if (user) {
+      await this.prismaService.auth_tokens.create({
+        data: {
+          user_id: user.user_id,
+          token_hash: tokenHash,
+          type: 'reset',
+          revoked: false,
+          expires_at: expiresAt,
+        },
+      });
+    }
+    console.log(token);
+  }
+
+  //   Hash provided token
+  // Query: SELECT * FROM Auth_Tokens WHERE token_hash=? AND type='reset' AND revoked=false AND expires_at > NOW()
+  // If no row found → reject (invalid/expired/already-revoked)
+  // Verify user still exists (foreign key should enforce this, but check anyway)
+  // Hash new password
+  // Update Users set password_hash=? where user_id=?
+  // Set revoked=true on the reset token (prevent reuse of same token)
+  // Optionally: revoke all other type='reset' tokens for this user (cleanup stale resets)
+  // Return success
+  async resetPassword(token: string, newPassword: string): Promise<void> {
+    const tokenHash = this.hashtoken(token);
+
+    const resetToken = await this.prismaService.auth_tokens.findFirst({
+      where: {
+        token_hash: tokenHash,
+        type: 'reset',
+        expires_at: { gt: new Date() },
+        revoked: false,
+      },
+    });
+    if (resetToken === null) {
+      throw new UnauthorizedException('invalid/expired/already-revoked token');
+    }
+
+    const password_hash = await this.hashPassword(newPassword);
+
+    await this.prismaService.auth_tokens.update({
+      where: {
+        token_hash: tokenHash,
+        user_id: resetToken.user_id,
+      },
+      data: { revoked: true },
+    });
+    await this.prismaService.users.update({
+      where: {
+        user_id: resetToken.user_id,
+      },
+      data: { password_hash: password_hash },
+    });
+  }
 }

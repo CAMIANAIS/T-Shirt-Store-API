@@ -12,6 +12,8 @@ import { SignUpDto } from './dto/signup.dto';
 import { SignOutDto } from './dto/signout.dto';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { JWTAuthGuard } from './guards/jwt-auth.guard';
+import { ForgotPasswordDto } from './dto/forgotPassword.dto';
+import { ResetPasswordDto } from './dto/resetpassword.dto';
 
 interface JwtPayload {
   sub: number;
@@ -35,5 +37,18 @@ export class AuthController {
   @Post('signout')
   signOut(@CurrentUser() user: JwtPayload, @Body() signOutDto: SignOutDto) {
     return this.authService.signOut(user.sub, signOutDto.token);
+  }
+  @HttpCode(HttpStatus.OK)
+  @Post('forgotpassword')
+  forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
+    return this.authService.forgotPassword(forgotPasswordDto.email);
+  }
+  @HttpCode(HttpStatus.OK)
+  @Post('resetpassword')
+  resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
+    return this.authService.resetPassword(
+      resetPasswordDto.token,
+      resetPasswordDto.newPassword,
+    );
   }
 }
