@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -47,5 +48,11 @@ export class ProductsController {
     @Body() productUpdateInputDto: ProductUpdateInputDto,
   ) {
     return this.productService.update(productId, productUpdateInputDto);
+  }
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(JWTAuthGuard)
+  @Delete(':productId')
+  remove(@Param('productId') productId: number) {
+    return this.productService.remove(productId);
   }
 }

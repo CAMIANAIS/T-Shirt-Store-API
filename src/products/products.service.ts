@@ -102,4 +102,18 @@ export class ProductsService {
     });
     return this.toProduct(updateProduct);
   }
+
+  async remove(productId: number): Promise<void> {
+    await this.findOne(productId);
+
+    await this.prismaService.products.update({
+      where: {
+        product_id: productId,
+        deleted_at: null,
+      },
+      data: {
+        deleted_at: new Date(),
+      },
+    });
+  }
 }

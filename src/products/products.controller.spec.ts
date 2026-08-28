@@ -18,6 +18,7 @@ describe('ProductsController', () => {
             create: jest.fn(),
             findOne: jest.fn(),
             update: jest.fn(),
+            remove: jest.fn(),
           },
         },
       ],
@@ -104,5 +105,20 @@ describe('ProductsController', () => {
     // controller return exactly what the service returned?
     expect(result).toEqual(mockUpdated);
     expect(updateSpy).toHaveBeenCalledWith(1, dto);
+  });
+
+  it('remove delegates to ProductsService.remove with the productId param', async () => {
+    // Arrange
+    const removeSpy = jest
+      .spyOn(productsService, 'remove')
+      .mockResolvedValue(undefined);
+
+    // Act
+    const result = await controller.remove(1);
+
+    // Assert — your turn. Was remove called with 1? Does the controller
+    // return undefined (matches remove's Promise<void>)?
+    expect(removeSpy).toHaveBeenCalledWith(1);
+    expect(result).toBeUndefined();
   });
 });

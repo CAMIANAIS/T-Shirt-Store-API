@@ -291,4 +291,51 @@ describe('ProductsService', () => {
     await expect(act).rejects.toThrow(NotFoundException);
     expect(updateSpy).not.toHaveBeenCalled();
   });
+
+  // remove cases
+  it('remove soft-deletes the product by setting deleted_at', async () => {
+    // Arrange
+    const existingRow = {
+      product_id: 1,
+      name: 'summer-tshirt',
+      description: 'long sleeves, 100% cotton',
+      status: 'active',
+      created_at: new Date('2026-01-01'),
+      updated_at: new Date('2026-01-02'),
+      deleted_at: null,
+      category_id: 5,
+    };
+    jest
+      .spyOn(prismaService.products, 'findFirst')
+      .mockResolvedValue(existingRow);
+    const updateSpy = jest
+      .spyOn(prismaService.products, 'update')
+      .mockResolvedValue({ ...existingRow, deleted_at: new Date() });
+
+    // Act
+    const result = await service.remove(1);
+
+    // Assert — your turn. Was `update` called with `where: { product_id: 1,
+    // deleted_at: null }` and `data: { deleted_at: <a Date> }`? Does
+    // `remove` return `undefined` (its declared type is `Promise<void>`)?
+    expect(result).toBeUndefined();
+    expect(updateSpy).toHaveBeenCalledWith({
+      where: { product_id: 1, deleted_at: null },
+      data: { deleted_at: expect.any(Date) },
+    });
+  });
+
+  it('remove throws NotFoundException when the product does not exist, without calling update', async () => {
+    // Arrange
+    jest.spyOn(prismaService.products, 'findFirst').mockResolvedValue(null);
+    const updateSpy = jest.spyOn(prismaService.products, 'update');
+
+    // Act
+    const act = service.remove(999);
+
+    // Assert — your turn. Does it reject with NotFoundException? Was
+    // `update` never called, since findOne threw first?
+    await expect(act).rejects.toThrow(NotFoundException);
+    expect(updateSpy).not.toHaveBeenCalled();
+  });
 });
