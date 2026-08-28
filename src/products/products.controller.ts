@@ -4,6 +4,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Param,
   Post,
   Query,
   UseGuards,
@@ -30,5 +31,10 @@ export class ProductsController {
   @Post()
   create(@Body() productInputDto: ProductInputDto) {
     return this.productService.create(productInputDto);
+  }
+
+  @Get(':productId')
+  findOne(@Param('productId') productId: number) {
+    return this.productService.findOne(productId);
   }
 }

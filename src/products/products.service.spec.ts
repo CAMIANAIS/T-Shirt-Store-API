@@ -17,6 +17,7 @@ describe('ProductsService', () => {
             products: {
               findMany: jest.fn(),
               create: jest.fn(),
+              findFirst: jest.fn(),
             },
           },
         },
@@ -92,6 +93,7 @@ describe('ProductsService', () => {
   // create cases
   it('create creates a product without variants when none are provided', async () => {
     // Arrange
+    const now = new Date();
     const dto = {
       name: 'summer-tshirt',
       description: 'long sleeves, 100% cotton',
@@ -103,8 +105,8 @@ describe('ProductsService', () => {
       name: dto.name,
       description: dto.description,
       status: dto.status,
-      created_at: new Date(),
-      updated_at: new Date(),
+      created_at: now,
+      updated_at: now,
       deleted_at: null,
       category_id: dto.categoryId,
     };
@@ -122,8 +124,8 @@ describe('ProductsService', () => {
       name: dto.name,
       description: dto.description,
       status: dto.status,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: now,
+      updatedAt: now,
       deletedAt: null,
       categoryId: dto.categoryId,
     });
@@ -181,5 +183,53 @@ describe('ProductsService', () => {
         }),
       },
     });
+  });
+
+  // findOne cases
+  it('findOne returns the mapped product when found', async () => {
+    // Arrange
+    const mockRow = {
+      product_id: 1,
+      name: 'summer-tshirt',
+      description: 'long sleeves, 100% cotton',
+      status: 'active',
+      created_at: new Date('2026-01-01'),
+      updated_at: new Date('2026-01-02'),
+      deleted_at: null,
+      category_id: 5,
+    };
+    const findFirstSpy = jest
+      .spyOn(prismaService.products, 'findFirst')
+      .mockResolvedValue(mockRow);
+
+    // Act
+    const result = await service.findOne(1);
+
+    // Assert — your turn. Was findFirst called with `product_id: 1` and
+    // `deleted_at: null`? Does result have the camelCase Product shape?
+    expect(result).toEqual({
+      productId: 1,
+      name: 'summer-tshirt',
+      description: 'long sleeves, 100% cotton',
+      status: 'active',
+      createdAt: new Date('2026-01-01'),
+      updatedAt: new Date('2026-01-02'),
+      deletedAt: null,
+      categoryId: 5,
+    });
+    expect(findFirstSpy).toHaveBeenNthCalledWith(1, {
+      where: { product_id: 1, deleted_at: null },
+    });
+  });
+
+  it('findOne throws NotFoundException when no matching product exists', async () => {
+    // Arrange
+    jest.spyOn(prismaService.products, 'findFirst').mockResolvedValue(null);
+
+    // Act
+    const act = service.findOne(999);
+
+    // Assert — your turn. Does it reject with NotFoundException?
+    await expect(act).rejects.toThrow('Product not found');
   });
 });
