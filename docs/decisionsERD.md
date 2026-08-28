@@ -89,3 +89,12 @@ again later, the same user does not get notified twice. Documented trade-off, no
 if a future requirement wants per-cycle re-notification, the extension path is a restock_cycle_id
 column and UNIQUE(product_id, user_id, restock_cycle_id) instead.
 
+13. JWT payload includes role name (Week 3, CASL prep)
+Decision: the JWT payload for both `signIn` and `signUp` now includes a `role` field — the
+role's name string (e.g. `'client'`, `'manager'`), not its numeric id. It's resolved server-side
+via a `role_id` lookup against `Roles`, never accepted from the client, matching the standing
+rule against client-supplied `userId`/`role`. In `signIn`, the lookup happens after password
+validation, not before — no reason to spend a DB query resolving a role for a login that's about
+to fail anyway. This lets a future CASL ability factory check `user.role` straight from the JWT
+payload, without an extra DB round-trip on every request.
+
