@@ -1,8 +1,14 @@
 # T-Shirt Store API
 
+[![CI](https://github.com/CAMIANAIS/T-Shirt-Store-API/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/CAMIANAIS/T-Shirt-Store-API/actions/workflows/ci.yaml)
+
 A T-Shirt e-commerce REST API built with NestJS, PostgreSQL (via Prisma), and Stripe: the
 capstone project for RAVN's Nerdery backend block. Implements the data model designed in Week 1
 and the OpenAPI contract designed in Week 2.
+
+The badge above reflects the latest `lint → build → test` run on `main`; check the
+[Actions tab](https://github.com/CAMIANAIS/T-Shirt-Store-API/actions) for the full commit history
+and run details on every checkpoint.
 
 ## Tech stack
 
