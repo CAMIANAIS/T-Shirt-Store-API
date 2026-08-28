@@ -1,6 +1,7 @@
 import { Type } from 'class-transformer';
 import {
   IsArray,
+  IsIn,
   IsNotEmpty,
   IsNumber,
   IsOptional,
@@ -11,6 +12,7 @@ import {
 export class VariantDto {
   @IsString()
   @IsNotEmpty()
+  @IsIn(['S', 'M', 'L', 'XL', 'XXL'])
   size: string;
 
   @IsString()
@@ -27,6 +29,7 @@ export class VariantDto {
 
   @IsOptional()
   @IsString()
+  @IsIn(['active', 'inactive', 'discontinued'])
   status: string;
 }
 export class ProductInputDto {
@@ -40,6 +43,7 @@ export class ProductInputDto {
 
   @IsString()
   @IsNotEmpty()
+  @IsIn(['active', 'inactive', 'discontinued'])
   status: string;
 
   @IsNumber()

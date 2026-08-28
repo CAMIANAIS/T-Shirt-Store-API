@@ -1,4 +1,10 @@
-import { IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
+import {
+  IsIn,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 
 export class ProductUpdateInputDto {
   @IsOptional()
@@ -14,6 +20,7 @@ export class ProductUpdateInputDto {
   @IsOptional()
   @IsString()
   @IsNotEmpty()
+  @IsIn(['active', 'inactive', 'discontinued'])
   status: string;
 
   @IsOptional()
