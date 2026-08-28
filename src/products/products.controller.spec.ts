@@ -17,6 +17,7 @@ describe('ProductsController', () => {
             findAll: jest.fn(),
             create: jest.fn(),
             findOne: jest.fn(),
+            update: jest.fn(),
           },
         },
       ],
@@ -86,5 +87,22 @@ describe('ProductsController', () => {
     // return exactly what the service returned?
     expect(findOneSpy).toHaveBeenCalledWith(1);
     expect(result).toEqual(mockProduct);
+  });
+
+  it('update delegates to ProductsService.update with productId and body', async () => {
+    // Arrange
+    const dto = { name: 'winter-tshirt' };
+    const mockUpdated = { productId: 1, name: dto.name };
+    const updateSpy = jest
+      .spyOn(productsService, 'update')
+      .mockResolvedValue(mockUpdated as any);
+
+    // Act
+    const result = await controller.update(1, dto as any);
+
+    // Assert — your turn. Was update called with (1, dto)? Does the
+    // controller return exactly what the service returned?
+    expect(result).toEqual(mockUpdated);
+    expect(updateSpy).toHaveBeenCalledWith(1, dto);
   });
 });

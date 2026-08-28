@@ -2,6 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ProductsService } from './products.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ProductInputDto } from './dto/createProduct.dto';
+import { ProductUpdateInputDto } from './dto/updateProduct.dto';
+import { NotFoundException } from '@nestjs/common';
 
 describe('ProductsService', () => {
   let service: ProductsService;
@@ -18,6 +20,7 @@ describe('ProductsService', () => {
               findMany: jest.fn(),
               create: jest.fn(),
               findFirst: jest.fn(),
+              update: jest.fn(),
             },
           },
         },
@@ -231,5 +234,61 @@ describe('ProductsService', () => {
 
     // Assert — your turn. Does it reject with NotFoundException?
     await expect(act).rejects.toThrow('Product not found');
+  });
+
+  // update cases
+  it('update updates and returns the mapped product when it exists', async () => {
+    // Arrange
+    const existingRow = {
+      product_id: 1,
+      name: 'summer-tshirt',
+      description: 'long sleeves, 100% cotton',
+      status: 'active',
+      created_at: new Date('2026-01-01'),
+      updated_at: new Date('2026-01-02'),
+      deleted_at: null,
+      category_id: 5,
+    };
+    const dto = { name: 'winter-tshirt' };
+    const updatedRow = { ...existingRow, name: dto.name };
+    jest
+      .spyOn(prismaService.products, 'findFirst')
+      .mockResolvedValue(existingRow);
+    const updateSpy = jest
+      .spyOn(prismaService.products, 'update')
+      .mockResolvedValue(updatedRow);
+
+    // Act
+    const result = await service.update(1, dto as ProductUpdateInputDto);
+
+    // Assert — your turn. Was `update` called with the right `where`/`data`
+    // shape? Does `result` have the camelCase Product shape with the new name?
+    expect(result).toEqual({
+      productId: 1,
+      name: 'winter-tshirt',
+      description: 'long sleeves, 100% cotton',
+      status: 'active',
+      createdAt: new Date('2026-01-01'),
+      updatedAt: new Date('2026-01-02'),
+      deletedAt: null,
+      categoryId: 5,
+    });
+    expect(updateSpy).toHaveBeenCalled();
+  });
+
+  it('update throws NotFoundException when the product does not exist, without calling update', async () => {
+    // Arrange
+    jest.spyOn(prismaService.products, 'findFirst').mockResolvedValue(null);
+    const updateSpy = jest.spyOn(prismaService.products, 'update');
+
+    // Act
+    const act = service.update(999, {
+      name: 'winter-tshirt',
+    } as ProductUpdateInputDto);
+
+    // Assert — your turn. Does it reject with NotFoundException? Was
+    // `update` never called, since findOne threw first?
+    await expect(act).rejects.toThrow(NotFoundException);
+    expect(updateSpy).not.toHaveBeenCalled();
   });
 });
