@@ -59,6 +59,7 @@ export class AuthService {
     if (user === null) {
       throw new UnauthorizedException();
     }
+
     const isPasswordValid = await this.comparePassword(
       pass,
       user.password_hash,
@@ -66,7 +67,14 @@ export class AuthService {
     if (!isPasswordValid) {
       throw new UnauthorizedException();
     }
-    const payload = { sub: user.user_id, email: user.email };
+    const clientRole = await this.prismaService.roles.findUnique({
+      where: { role_id: user.role_id },
+    });
+    const payload = {
+      sub: user.user_id,
+      email: user.email,
+      role: clientRole?.name,
+    };
     const access_token = await this.jwtService.signAsync(payload);
     const refresh_token = await this.issueRefreshToken(user.user_id);
     return { access_token, refresh_token };
@@ -97,7 +105,11 @@ export class AuthService {
       dto.birthdate,
     );
 
-    const payload = { sub: user.user_id, username: user.username };
+    const payload = {
+      sub: user.user_id,
+      username: user.username,
+      role: clientRole.name,
+    };
     const access_token = await this.jwtService.signAsync(payload);
     const refresh_token = await this.issueRefreshToken(user.user_id);
     return { access_token, refresh_token };

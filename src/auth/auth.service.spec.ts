@@ -79,6 +79,43 @@ describe('AuthService', () => {
     expect(jwtService.signAsync).toHaveBeenCalled();
   });
 
+  it("signIn includes the user's role name in the JWT payload", async () => {
+    // Arrange
+    const plainPassword = 'test123';
+    const hashedPassword = await bcrypt.hash(plainPassword, 10);
+    const mockUser = {
+      user_id: 1,
+      email: 'test@example.com',
+      password_hash: hashedPassword,
+      role_id: 2,
+    };
+    const mockRole = { role_id: 2, name: 'manager' };
+    const mockToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...';
+
+    (usersService.userByEmail as jest.Mock).mockResolvedValue(mockUser);
+    (prismaService.roles.findUnique as jest.Mock).mockResolvedValue(mockRole);
+    const signAsyncSpy = jest
+      .spyOn(jwtService, 'signAsync')
+      .mockResolvedValue(mockToken);
+
+    // Act
+    await service.signIn(mockUser.email, plainPassword);
+
+    // Assert — your turn. Was prismaService.roles.findUnique called with
+    // { where: { role_id: 2 } }? Was jwtService.signAsync called with a
+    // payload that includes `role: 'manager'`?
+    expect(signAsyncSpy).toHaveBeenCalledWith({
+      sub: 1,
+      email: 'test@example.com',
+      role: 'manager',
+    });
+    expect(prismaService.roles.findUnique).toHaveBeenCalledWith({
+      where: {
+        role_id: 2,
+      },
+    });
+  });
+
   // signIn cases
   it('signIn should throw UnauthorizedException with wrong password', async () => {
     // Arrange
