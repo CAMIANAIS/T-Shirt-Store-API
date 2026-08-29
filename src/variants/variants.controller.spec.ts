@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { VariantsController } from './variants.controller';
 import { VariantsService } from './variants.service';
 import { JWTAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { PoliciesGuard } from '../casl/policies.guard';
 
 describe('VariantsController', () => {
   let controller: VariantsController;
@@ -22,6 +23,8 @@ describe('VariantsController', () => {
       ],
     })
       .overrideGuard(JWTAuthGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(PoliciesGuard)
       .useValue({ canActivate: () => true })
       .compile();
 

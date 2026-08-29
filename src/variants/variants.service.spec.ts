@@ -167,9 +167,17 @@ describe('VariantsService', () => {
   it('create throws ConflictException when the SKU already exists', async () => {
     // Arrange
     (productsService.findOne as jest.Mock).mockResolvedValue({});
-    jest
-      .spyOn(prismaService.product_variants, 'findFirst')
-      .mockResolvedValue({ sku_code: 'TSH-RED-MD' });
+    jest.spyOn(prismaService.product_variants, 'findFirst').mockResolvedValue({
+      product_variant_id: 1,
+      product_id: 5,
+      size: 'M',
+      color: 'red',
+      stock_quantity: 10,
+      sku_code: 'TSH-RED-MD',
+      status: 'active',
+      created_at: null,
+      updated_at: null,
+    });
     const createSpy = jest.spyOn(prismaService.product_variants, 'create');
     const dto = {
       size: 'M',
@@ -212,13 +220,24 @@ describe('VariantsService', () => {
     const existingVariant = {
       product_variant_id: 1,
       product_id: 5,
+      size: 'M',
+      color: 'red',
+      stock_quantity: 10,
       sku_code: 'TSH-RED-MD',
+      status: 'active',
+      created_at: null,
+      updated_at: null,
+    };
+    const conflictingVariant = {
+      ...existingVariant,
+      product_variant_id: 2,
+      sku_code: 'TSH-BLU-MD',
     };
     (productsService.findOne as jest.Mock).mockResolvedValue({});
     jest
       .spyOn(prismaService.product_variants, 'findFirst')
       .mockResolvedValueOnce(existingVariant)
-      .mockResolvedValueOnce({ sku_code: 'TSH-BLU-MD' });
+      .mockResolvedValueOnce(conflictingVariant);
     const updateSpy = jest.spyOn(prismaService.product_variants, 'update');
 
     // Act

@@ -15,6 +15,9 @@ import { ProductsService } from './products.service';
 import { ProductInputDto } from './dto/createProduct.dto';
 import { JWTAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ProductUpdateInputDto } from './dto/updateProduct.dto';
+import { PoliciesGuard } from '../casl/policies.guard';
+import { CheckPolicies } from '../casl/policies.decorator';
+import { AppAbility } from '../casl/casl-ability.factory';
 
 @Controller('products')
 export class ProductsController {
@@ -30,7 +33,8 @@ export class ProductsController {
     return this.productService.findAll(categoryId, limit, offset);
   }
 
-  @UseGuards(JWTAuthGuard)
+  @UseGuards(JWTAuthGuard, PoliciesGuard)
+  @CheckPolicies((ability: AppAbility) => ability.can('manage', 'Product'))
   @Post()
   create(@Body() productInputDto: ProductInputDto) {
     return this.productService.create(productInputDto);
@@ -41,7 +45,8 @@ export class ProductsController {
     return this.productService.findOne(productId);
   }
 
-  @UseGuards(JWTAuthGuard)
+  @UseGuards(JWTAuthGuard, PoliciesGuard)
+  @CheckPolicies((ability: AppAbility) => ability.can('update', 'Product'))
   @Patch(':productId')
   update(
     @Param('productId') productId: number,
@@ -50,7 +55,8 @@ export class ProductsController {
     return this.productService.update(productId, productUpdateInputDto);
   }
   @HttpCode(HttpStatus.NO_CONTENT)
-  @UseGuards(JWTAuthGuard)
+  @UseGuards(JWTAuthGuard, PoliciesGuard)
+  @CheckPolicies((ability: AppAbility) => ability.can('delete', 'Product'))
   @Delete(':productId')
   remove(@Param('productId') productId: number) {
     return this.productService.remove(productId);

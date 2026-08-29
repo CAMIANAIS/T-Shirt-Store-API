@@ -14,6 +14,9 @@ import { VariantsService } from './variants.service';
 import { ProductVariantInputDto } from './dto/createProductVariant.dto';
 import { ProductVariantUpdateInputDto } from './dto/updateProductVariant.dto';
 import { JWTAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { PoliciesGuard } from '../casl/policies.guard';
+import { AppAbility } from '../casl/casl-ability.factory';
+import { CheckPolicies } from '../casl/policies.decorator';
 
 @Controller('products/:productId/variants')
 export class VariantsController {
@@ -29,7 +32,8 @@ export class VariantsController {
     return this.variantsService.findByProductId(productId, limit, offset);
   }
 
-  @UseGuards(JWTAuthGuard)
+  @UseGuards(JWTAuthGuard, PoliciesGuard)
+  @CheckPolicies((ability: AppAbility) => ability.can('manage', 'Product'))
   @HttpCode(HttpStatus.CREATED)
   @Post()
   create(
@@ -39,7 +43,8 @@ export class VariantsController {
     return this.variantsService.create(productId, productVariantInputDto);
   }
 
-  @UseGuards(JWTAuthGuard)
+  @UseGuards(JWTAuthGuard, PoliciesGuard)
+  @CheckPolicies((ability: AppAbility) => ability.can('update', 'Product'))
   @HttpCode(HttpStatus.OK)
   @Patch(':productVariantId')
   update(
