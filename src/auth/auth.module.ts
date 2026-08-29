@@ -21,5 +21,6 @@ import { PrismaModule } from '../prisma/prisma.module';
       }),
     }),
   ],
+  exports: [JwtModule],
 })
 export class AuthModule {}
