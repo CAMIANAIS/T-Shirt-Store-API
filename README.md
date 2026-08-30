@@ -64,8 +64,13 @@ npm run test:e2e # end-to-end tests
 
 **Week 3 checkpoint: authentication, products, and SKUs/variants, implemented and
 unit-tested.** See `docs/architecture.md` for the production architecture write-up (System
-Design Review deliverable). CASL authorization, Stripe payments, orders, and background jobs are
-in progress for the next milestone.
+Design Review deliverable).
+
+**Week 4 in progress**: CASL role-based authorization (Manager/Client abilities, enforced on
+Products/Variants routes) and a global exception filter (catches unhandled errors, matches the
+API contract's `Error` schema, never leaks internal details) are implemented and verified against
+a running instance. CORS/Helmet, cart/orders, Stripe payments, and background jobs are still in
+progress for the next milestone.
 
 ## Documentation
 
