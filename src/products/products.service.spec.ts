@@ -3,7 +3,7 @@ import { ProductsService } from './products.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ProductInputDto } from './dto/createProduct.dto';
 import { ProductUpdateInputDto } from './dto/updateProduct.dto';
-import { NotFoundException } from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@nestjs/common';
 
 describe('ProductsService', () => {
   let service: ProductsService;
@@ -337,5 +337,101 @@ describe('ProductsService', () => {
     // `update` never called, since findOne threw first?
     await expect(act).rejects.toThrow(NotFoundException);
     expect(updateSpy).not.toHaveBeenCalled();
+  });
+  describe('activate', () => {
+    it('returns 200 (idempotent) when already active', async () => {
+      const mockProduct = { status: 'active' };
+      jest.spyOn(service, 'findOne').mockResolvedValue(mockProduct as any);
+      const updateSpy = jest.spyOn(prismaService.products, 'update');
+      const result = await service.activate(1);
+
+      expect(result).toEqual(mockProduct);
+      // Prisma update should NOT be called
+      expect(updateSpy).not.toHaveBeenCalled();
+    });
+
+    it('changes status to active when currently inactive', async () => {
+      const mockProduct = {
+        product_id: 1,
+        name: 'summer-tshirt',
+        description: 'long sleeves, 100% cotton',
+        status: 'inactive',
+        created_at: new Date('2026-01-01'),
+        updated_at: new Date('2026-01-02'),
+        deleted_at: null,
+        category_id: 5,
+      };
+      jest.spyOn(service, 'findOne').mockResolvedValue(mockProduct as any);
+      const updateSpy = jest
+        .spyOn(prismaService.products, 'update')
+        .mockResolvedValue({ ...mockProduct, status: 'active' });
+
+      const result = await service.activate(1);
+
+      expect(updateSpy).toHaveBeenCalledWith({
+        where: { product_id: 1 },
+        data: { status: 'active' },
+      });
+      expect(result.status).toBe('active');
+    });
+
+    it('throws 409 when trying to activate discontinued product', async () => {
+      const mockProduct = { status: 'discontinued' };
+      jest.spyOn(service, 'findOne').mockResolvedValue(mockProduct as any);
+
+      const act = service.activate(1);
+
+      await expect(act).rejects.toThrow(
+        new ConflictException('Cannot activate a discontinued product'),
+      );
+    });
+  });
+  describe('deactivate', () => {
+    it('returns 200 (idempotent) when already inactive', async () => {
+      const mockProduct = { status: 'inactive' };
+      jest.spyOn(service, 'findOne').mockResolvedValue(mockProduct as any);
+      const updateSpy = jest.spyOn(prismaService.products, 'update');
+
+      const result = await service.deactivate(1);
+
+      expect(result).toEqual(mockProduct);
+      expect(updateSpy).not.toHaveBeenCalled();
+    });
+
+    it('changes status to inactive when currently active', async () => {
+      const mockProduct = {
+        product_id: 1,
+        name: 'summer-tshirt',
+        description: 'long sleeves, 100% cotton',
+        status: 'active',
+        created_at: new Date('2026-01-01'),
+        updated_at: new Date('2026-01-02'),
+        deleted_at: null,
+        category_id: 5,
+      };
+      jest.spyOn(service, 'findOne').mockResolvedValue(mockProduct as any);
+      const updateSpy = jest
+        .spyOn(prismaService.products, 'update')
+        .mockResolvedValue({ ...mockProduct, status: 'inactive' });
+
+      const result = await service.deactivate(1);
+
+      expect(updateSpy).toHaveBeenCalledWith({
+        where: { product_id: 1 },
+        data: { status: 'inactive' },
+      });
+      expect(result.status).toBe('inactive');
+    });
+
+    it('throws 409 when trying to deactivate discontinued product', async () => {
+      const mockProduct = { status: 'discontinued' };
+      jest.spyOn(service, 'findOne').mockResolvedValue(mockProduct as any);
+
+      const act = service.deactivate(1);
+
+      await expect(act).rejects.toThrow(
+        new ConflictException('Cannot deactivate a discontinued product'),
+      );
+    });
   });
 });

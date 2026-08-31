@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ProductInputDto } from './dto/createProduct.dto';
 import { productsModel } from 'generated/prisma/models';
@@ -115,5 +119,43 @@ export class ProductsService {
         deleted_at: new Date(),
       },
     });
+  }
+
+  async activate(productId: number): Promise<Product> {
+    const product = await this.findOne(productId);
+
+    if (product.status === 'active') {
+      return product;
+    }
+
+    if (product.status === 'discontinued') {
+      throw new ConflictException('Cannot activate a discontinued product');
+    }
+
+    const updated = await this.prismaService.products.update({
+      where: { product_id: productId },
+      data: { status: 'active' },
+    });
+
+    return this.toProduct(updated);
+  }
+
+  async deactivate(productId: number): Promise<Product> {
+    const product = await this.findOne(productId);
+
+    if (product.status === 'inactive') {
+      return product;
+    }
+
+    if (product.status === 'discontinued') {
+      throw new ConflictException('Cannot deactivate a discontinued product');
+    }
+
+    const updated = await this.prismaService.products.update({
+      where: { product_id: productId },
+      data: { status: 'inactive' },
+    });
+
+    return this.toProduct(updated);
   }
 }
