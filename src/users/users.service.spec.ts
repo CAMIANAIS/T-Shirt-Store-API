@@ -83,6 +83,9 @@ describe('UsersService', () => {
         password_hash: 'hash',
         role_id: 2,
         birthdate: '2000-01-01',
+        carts: {
+          create: {},
+        },
       },
     });
   });

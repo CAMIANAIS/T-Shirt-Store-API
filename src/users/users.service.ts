@@ -26,6 +26,9 @@ export class UsersService {
         password_hash,
         role_id,
         birthdate,
+        carts: {
+          create: {},
+        },
       },
     });
 
