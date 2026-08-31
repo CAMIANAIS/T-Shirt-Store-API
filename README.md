@@ -69,14 +69,14 @@ Design Review deliverable).
 **Week 4 in progress**: CASL role-based authorization (Manager/Client abilities, enforced on
 Products/Variants routes) and a global exception filter (catches unhandled errors, matches the
 API contract's `Error` schema, never leaks internal details) are implemented and verified against
-a running instance. CORS/Helmet, cart/orders, Stripe payments, and background jobs are still in
-progress for the next milestone.
+a running instance. CORS, Helmet, and a live Swagger UI are also wired in. Cart/orders, Stripe
+payments, and background jobs are still in progress for the next milestone.
 
 ## Documentation
 
 - [`docs/openApi.yml`](docs/openApi.yml): the API contract (Swagger/OpenAPI)
 - [`docs/schemaERD.sql`](docs/schemaERD.sql): the database schema
-- [`docs/decisionsERD.md`](docs/decisionsERD.md): schema design decisions and rationale
+- [`docs/schemaERD_decisions.md`](docs/schemaERD_decisions.md): schema design decisions and rationale
 - [`docs/architecture.md`](docs/architecture.md): production architecture, queue choice, deploy
   shape, monitoring, and known risks
 
@@ -84,7 +84,7 @@ progress for the next milestone.
 
 Key decisions worth knowing about before reading the code, spanning Week 1's schema design
 through this week's implementation. Full rationale for the schema items lives in
-`docs/decisionsERD.md`; architecture items live in `docs/architecture.md`.
+`docs/schemaERD_decisions.md`; architecture items live in `docs/architecture.md`.
 
 **Schema (Week 1)**
 

@@ -7,7 +7,9 @@ front-load everything.
 
 - `docs/` holds real project artifacts: `openApi.yml` (the API contract), `openApi_Patterns.md`
   (design decisions/rationale, referenced by URL from inside `openApi.yml` — if it moves, update
-  that link too), `schemaERD.sql` (the DB schema).
+  that link too), `schemaERD.sql` (the DB schema), `schemaERD_decisions.md` (schema design
+  decisions/rationale, numbered, one per real decision — if it moves, update the two references in
+  `README.md` too), `architecture.md` (production architecture write-up).
 - `guidelines/` is Nerdery program material plus personal working notes — gitignored, never
   tracked. Don't put real project documentation there.
 - `.env` and anything matching `*.pem`/`*.key`/`*secrets*` is blocked from tool reads/edits by a

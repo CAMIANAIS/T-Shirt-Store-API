@@ -43,9 +43,7 @@ cancellation is built (Week 4).
 10.  Added a CHECK constraint that enforces: if changed_by_type = 'user', changed_by_email must always be recorded. The changed_by_user_id can go null if the user is deleted ,that's fine. If changed_by_type = 'system', both fields stay null. The email is the durable identifier that keeps the audit trail meaningful. The user_id is just a convenience link. This way you can delete a user without breaking the historical record.
 
 # HAVE ON MIND THIS
- "Current order status" only exists as the latest row in order_status_history — there's no status column on orders itself. That's defensible (single source of truth, no duplicated state) but it has a real cost: section 9's "filter by order status" and section 10's "clients can view their order's current status" both need you to derive the latest row per order every time (window function or correlated subquery) rather than a plain indexed WHERE. Not wrong, but it's a trade-off you should have ready to explain, not something you discover mid-review.
-
-One ambiguity worth resolving intentionally, not accidentally: section 4 lists "Delete products" and "Disable products" as two separate Manager capabilities. Your product_variant has ON DELETE RESTRICT back to product — meaning a real SQL DELETE on any product with variants (i.e., basically every real product) will simply fail. If "delete" is meant to literally remove the row, that capability is effectively unreachable as built. More likely, "delete" and "disable" both just mean status transitions (discontinued vs inactive), and you never actually want a hard delete on a product with order history anyway — which is a good argument for keeping RESTRICT. Just make sure that's a decision you made, not a side effect you haven't noticed.
+"Current order status" only exists as the latest row in order_status_history — there's no status column on orders itself. That's defensible (single source of truth, no duplicated state) but it has a real cost: section 9's "filter by order status" and section 10's "clients can view their order's current status" both need you to derive the latest row per order every time (window function or correlated subquery) rather than a plain indexed WHERE. Not wrong, but it's a trade-off you should have ready to explain, not something you discover mid-review.
 
 Not a gap: no promo-code table — section 13 is explicitly under "Optional Features," so its absence isn't a completeness problem. Worth a one-line note in decisions.md that it's deliberately deferred, same as you did for the others.
 
@@ -98,3 +96,11 @@ validation, not before — no reason to spend a DB query resolving a role for a 
 to fail anyway. This lets a future CASL ability factory check `user.role` straight from the JWT
 payload, without an extra DB round-trip on every request.
 
+14. Delete vs. disable products — resolved
+Decision: both stay status transitions, not row removal. `remove()` (`DELETE /products/:productId`)
+is a soft delete — sets `deleted_at`, never issues a real SQL `DELETE` — so `product_variants`'
+`ON DELETE RESTRICT` back to `products` never actually gets exercised. "Disable" split further
+into two distinct states on the existing `status` field: `inactive` (reversible — dedicated
+`POST /products/:productId/activate`/`deactivate` endpoints) and `discontinued` (permanent — both
+endpoints reject it with 409). Confirms this wasn't an oversight — a hard delete on a product
+with order history was never the goal.
