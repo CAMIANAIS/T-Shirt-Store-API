@@ -4,6 +4,7 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  Min,
 } from 'class-validator';
 
 export class ProductVariantInputDto {
@@ -28,4 +29,8 @@ export class ProductVariantInputDto {
   @IsString()
   @IsIn(['active', 'inactive', 'discontinued'])
   status?: string;
+
+  @IsNumber()
+  @Min(0)
+  price: number;
 }

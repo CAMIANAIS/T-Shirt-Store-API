@@ -99,6 +99,7 @@ export class VariantsService {
         stock_quantity: dto.stockQuantity,
         sku_code: dto.skuCode,
         status: dto.status || 'active',
+        prices_history: { create: { price: dto.price } },
       },
     });
 

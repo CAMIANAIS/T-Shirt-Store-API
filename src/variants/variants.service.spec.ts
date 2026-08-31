@@ -187,6 +187,7 @@ describe('VariantsService', () => {
       color: 'red',
       stockQuantity: 10,
       skuCode: 'TSH-RED-MD',
+      price: 2999,
     };
 
     // Act
@@ -213,6 +214,7 @@ describe('VariantsService', () => {
         stock_quantity: 10,
         sku_code: 'TSH-RED-MD',
         status: 'active',
+        prices_history: { create: { price: 2999 } },
       },
     });
   });
@@ -237,6 +239,7 @@ describe('VariantsService', () => {
       color: 'red',
       stockQuantity: 10,
       skuCode: 'TSH-RED-MD',
+      price: 2999,
     };
 
     // Act
