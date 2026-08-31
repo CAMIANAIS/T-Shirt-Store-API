@@ -23,7 +23,8 @@ export class EnvironmentVariables {
   JWT_SECRET: string;
   @Type(() => Number)
   @IsNumber()
-  @Min(1)
+  @Min(60)
+  @Max(86400)
   JWT_EXPIRATION: number;
   @Type(() => Number)
   @IsNumber()

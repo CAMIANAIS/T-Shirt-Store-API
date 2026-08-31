@@ -25,15 +25,25 @@ and run details on every checkpoint.
 npm install
 ```
 
-Create a `.env` file with:
+Create a `.env` file — see [Environment Variables](#environment-variables) below for what each
+one needs.
 
-```
-DATABASE_URL=postgres://...
-JWT_SECRET=          # 32+ chars, e.g. `openssl rand -hex 32`
-JWT_EXPIRATION=
-PORT=
-NODE_ENV=
-```
+## Environment Variables
+
+Validated at startup by `src/config/environment.ts`; the app refuses to boot if any are missing
+or invalid.
+
+- `DATABASE_URL` (string): PostgreSQL connection string, e.g.
+  `postgres://user:password@localhost:5432/t_shirt_store`.
+- `JWT_SECRET` (string): secret key for signing JWTs. Minimum 32 characters — generate one with
+  `openssl rand -hex 32`.
+- `JWT_EXPIRATION` (number): access token lifetime **in seconds**, not minutes/hours — a bare
+  number is interpreted as seconds by `@nestjs/jwt`. Min `60`, max `86400`. Example: `900` (15
+  minutes).
+- `PORT` (number): port the server listens on. Min `1`, max `65535`. Example: `3000`.
+- `NODE_ENV` (string): e.g. `development`, `test`, `production`.
+
+Stripe-related variables aren't listed yet — payment integration isn't built.
 
 Build the database from `docs/schemaERD.sql` (idempotent, safe to re-run), then generate the
 Prisma client:
