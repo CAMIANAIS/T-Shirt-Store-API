@@ -42,11 +42,6 @@ cancellation is built (Week 4).
 
 10.  Added a CHECK constraint that enforces: if changed_by_type = 'user', changed_by_email must always be recorded. The changed_by_user_id can go null if the user is deleted ,that's fine. If changed_by_type = 'system', both fields stay null. The email is the durable identifier that keeps the audit trail meaningful. The user_id is just a convenience link. This way you can delete a user without breaking the historical record.
 
-# HAVE ON MIND THIS
-"Current order status" only exists as the latest row in order_status_history — there's no status column on orders itself. That's defensible (single source of truth, no duplicated state) but it has a real cost: section 9's "filter by order status" and section 10's "clients can view their order's current status" both need you to derive the latest row per order every time (window function or correlated subquery) rather than a plain indexed WHERE. Not wrong, but it's a trade-off you should have ready to explain, not something you discover mid-review.
-
-Not a gap: no promo-code table — section 13 is explicitly under "Optional Features," so its absence isn't a completeness problem. Worth a one-line note in decisions.md that it's deliberately deferred, same as you did for the others.
-
 11. Auth_Tokens gets a `type` column (refresh/reset), NOT NULL
 Decision: reuse Auth_Tokens for password-reset tokens instead of a separate table — it already had
 token_hash/expires_at/revoked/jti/user_id, which is most of what a reset token needs. Added a
@@ -59,7 +54,7 @@ signed JWTs, never persisted, so no row was ever going to carry that type — ke
 left the schema documenting a token kind that doesn't exist. Only `refresh` (opaque random token,
 SHA-256 hash, looked up directly by `token_hash`) and `reset` actually get rows.
 
-12a. Order_Items — no updated_at, blocked from UPDATE entirely
+12. Order_Items — no updated_at, blocked from UPDATE entirely
 Decision: once an order is placed, its line items are locked in — quantity and price_at_purchase
 never change after creation. Caught via a normalization check on Orders.total_amount: it's
 derivable from Order_Items, and Order_Items had updated_at + a trigger implying it was mutable,
@@ -69,7 +64,7 @@ raises on any UPDATE — the database enforces the immutability, not just applic
 Cart_Items is the deliberate opposite: quantity is genuinely mutable before checkout
 (PATCH /carts/items/{id}), so it keeps updated_at and allows normal UPDATE.
 
-12b. Order_Items correction path — deliberately not built yet
+13. Order_Items correction path — deliberately not built yet
 If a legitimate operational need ever comes up (a manager fixing a genuine data-entry mistake),
 that should NOT be "just allow updates" or a trigger bypass hidden in application code. The
 right shape, when/if it's actually needed: a separate, explicit stored procedure
@@ -79,7 +74,7 @@ trigger. The blocking trigger says "normal code cannot do this"; the procedure s
 logged, admin-only path can, and it's never silent." Not built today — no requirement asks for
 it yet — but the principle is settled so it isn't re-derived from scratch later.
 
-12. Stock_Notifications — new table, "once ever per product" de-dup
+14. Stock_Notifications — new table, "once ever per product" de-dup
 Decision: checked challenge.md/GUIDELINES3 first — Week 4 doesn't ask for per-restock-cycle
 re-notification, so went with the simple version: UNIQUE(product_id, user_id) blocks a second
 notification row for the same pair, period. If a liked product restocks, sells out, and restocks
@@ -87,7 +82,7 @@ again later, the same user does not get notified twice. Documented trade-off, no
 if a future requirement wants per-cycle re-notification, the extension path is a restock_cycle_id
 column and UNIQUE(product_id, user_id, restock_cycle_id) instead.
 
-13. JWT payload includes role name (Week 3, CASL prep)
+15. JWT payload includes role name (Week 3, CASL prep)
 Decision: the JWT payload for both `signIn` and `signUp` now includes a `role` field — the
 role's name string (e.g. `'client'`, `'manager'`), not its numeric id. It's resolved server-side
 via a `role_id` lookup against `Roles`, never accepted from the client, matching the standing
@@ -96,7 +91,7 @@ validation, not before — no reason to spend a DB query resolving a role for a 
 to fail anyway. This lets a future CASL ability factory check `user.role` straight from the JWT
 payload, without an extra DB round-trip on every request.
 
-14. Delete vs. disable products — resolved
+16. Delete vs. disable products — resolved
 Decision: both stay status transitions, not row removal. `remove()` (`DELETE /products/:productId`)
 is a soft delete — sets `deleted_at`, never issues a real SQL `DELETE` — so `product_variants`'
 `ON DELETE RESTRICT` back to `products` never actually gets exercised. "Disable" split further
