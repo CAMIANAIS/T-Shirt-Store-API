@@ -10,5 +10,6 @@ import { AuthModule } from '../auth/auth.module';
   imports: [ProductsModule, CaslModule, PrismaModule, AuthModule],
   providers: [VariantsService],
   controllers: [VariantsController],
+  exports: [VariantsService],
 })
 export class VariantsModule {}

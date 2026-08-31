@@ -44,6 +44,59 @@ describe('VariantsService', () => {
     expect(service).toBeDefined();
   });
 
+  // findOne cases
+  it('findOne returns the mapped variant when it exists', async () => {
+    // Arrange
+    const mockRow = {
+      product_variant_id: 1,
+      product_id: 5,
+      size: 'M',
+      color: 'red',
+      stock_quantity: 10,
+      sku_code: 'TSH-RED-MD',
+      status: 'active',
+      created_at: new Date('2026-01-01'),
+      updated_at: new Date('2026-01-02'),
+    };
+    const findFirstSpy = jest
+      .spyOn(prismaService.product_variants, 'findFirst')
+      .mockResolvedValue(mockRow);
+
+    // Act
+    const result = await service.findOne(1);
+
+    // Assert — your turn. Was findFirst called with
+    // `where: { product_variant_id: 1 }`? Does result have the camelCase
+    // ProductVariant shape (productVariantId, stockQuantity, skuCode...)?
+    expect(findFirstSpy).toHaveBeenNthCalledWith(1, {
+      where: { product_variant_id: 1 },
+    });
+    expect(result).toEqual({
+      productVariantId: 1,
+      productId: 5,
+      size: 'M',
+      color: 'red',
+      stockQuantity: 10,
+      skuCode: 'TSH-RED-MD',
+      status: 'active',
+      createdAt: new Date('2026-01-01'),
+      updatedAt: new Date('2026-01-02'),
+    });
+  });
+
+  it('findOne throws NotFoundException when the variant does not exist', async () => {
+    // Arrange
+    jest
+      .spyOn(prismaService.product_variants, 'findFirst')
+      .mockResolvedValue(null);
+
+    // Act
+    const act = service.findOne(999);
+
+    // Assert — your turn. Does it reject with NotFoundException?
+    await expect(act).rejects.toThrow('ProductVariant not found');
+  });
+
   // findByProductId cases
   it('findByProductId returns the mapped variants for a product', async () => {
     // Arrange

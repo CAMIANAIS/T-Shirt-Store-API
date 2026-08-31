@@ -12,6 +12,7 @@ import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { ProductsModule } from './products/products.module';
 import { VariantsModule } from './variants/variants.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
+import { CartsModule } from './carts/carts.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
     }),
     ProductsModule,
     VariantsModule,
+    CartsModule,
   ],
   controllers: [AppController],
   providers: [

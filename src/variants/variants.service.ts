@@ -42,6 +42,18 @@ export class VariantsService {
     };
   }
 
+  async findOne(productVariantId: number): Promise<ProductVariant> {
+    const productVariant = await this.prismaService.product_variants.findFirst({
+      where: {
+        product_variant_id: productVariantId,
+      },
+    });
+    if (!productVariant) {
+      throw new NotFoundException('ProductVariant not found');
+    }
+    return this.toProductVariant(productVariant);
+  }
+
   async findByProductId(
     productId: number,
     limit?: number,
