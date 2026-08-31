@@ -1,8 +1,10 @@
 import {
+  Body,
   Controller,
   Get,
   HttpCode,
   HttpStatus,
+  Post,
   UseGuards,
 } from '@nestjs/common';
 import { CartsService } from './carts.service';
@@ -11,6 +13,7 @@ import { PoliciesGuard } from '../casl/policies.guard';
 import { CheckPolicies } from '../casl/policies.decorator';
 import { AppAbility } from '../casl/casl-ability.factory';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { CartItemInputDto } from './dto/cartItemInput.dto';
 interface JwtPayload {
   sub: number;
 }
@@ -23,5 +26,15 @@ export class CartsController {
   @Get()
   getCart(@CurrentUser() user: JwtPayload) {
     return this.cartService.getCart(user.sub);
+  }
+
+  @UseGuards(JWTAuthGuard, PoliciesGuard)
+  @CheckPolicies((ability: AppAbility) => ability.can('manage', 'Cart'))
+  @Post('items')
+  addItem(
+    @CurrentUser() user: JwtPayload,
+    @Body() cartItemInputDto: CartItemInputDto,
+  ) {
+    return this.cartService.addItem(user.sub, cartItemInputDto);
   }
 }

@@ -16,6 +16,7 @@ describe('CartsController', () => {
           provide: CartsService,
           useValue: {
             getCart: jest.fn(),
+            addItem: jest.fn(),
           },
         },
       ],
@@ -47,6 +48,23 @@ describe('CartsController', () => {
     // Assert — your turn. Was getCart called with 5 (user.sub), not the
     // whole user object? Does result equal mockCart?
     expect(getCartSpy).toHaveBeenCalledWith(5);
+    expect(result).toEqual(mockCart);
+  });
+
+  it('addItem delegates to CartsService.addItem with the current user id and dto', async () => {
+    // Arrange
+    const mockCart = { id: 1, userId: 5, items: [] };
+    const addItemSpy = jest
+      .spyOn(cartsService, 'addItem')
+      .mockResolvedValue(mockCart);
+    const dto = { productVariantId: 42, quantity: 3 };
+
+    // Act
+    const result = await controller.addItem({ sub: 5 }, dto);
+
+    // Assert — your turn. Was addItem called with (5, dto)? Does result
+    // equal mockCart?
+    expect(addItemSpy).toHaveBeenCalledWith(5, dto);
     expect(result).toEqual(mockCart);
   });
 });
