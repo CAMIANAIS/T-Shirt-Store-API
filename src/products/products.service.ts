@@ -66,6 +66,7 @@ export class ProductsService {
               stock_quantity: variant.stockQuantity,
               sku_code: variant.skuCode,
               status: variant.status,
+              prices_history: { create: { price: variant.price } },
             })),
           },
         }),

@@ -143,7 +143,13 @@ describe('ProductsService', () => {
       status: 'active',
       categoryId: 5,
       variants: [
-        { size: 'M', color: 'red', stockQuantity: 10, skuCode: 'TSH-RED-MD' },
+        {
+          size: 'M',
+          color: 'red',
+          stockQuantity: 10,
+          skuCode: 'TSH-RED-MD',
+          price: 2999,
+        },
       ],
     };
     const mockCreated = {
@@ -180,6 +186,7 @@ describe('ProductsService', () => {
                 color: 'red',
                 stock_quantity: 10,
                 sku_code: 'TSH-RED-MD',
+                prices_history: { create: { price: 2999 } },
               },
             ],
           },
