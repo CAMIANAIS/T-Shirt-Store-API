@@ -24,6 +24,7 @@ describe('CartsService', () => {
               findFirst: jest.fn(),
               update: jest.fn(),
               create: jest.fn(),
+              deleteMany: jest.fn(),
             },
             prices_history: {
               findFirst: jest.fn(),
@@ -260,5 +261,36 @@ describe('CartsService', () => {
     // update never called, since the item lookup failed first?
     expect(updateSpy).not.toHaveBeenCalled();
     await expect(act).rejects.toThrow(NotFoundException);
+  });
+
+  // removeItem cases
+  it("removeItem deletes the item scoped to this user's cart", async () => {
+    // Arrange
+    jest
+      .spyOn(prismaService.carts, 'findUnique')
+      .mockResolvedValue({ cart_id: 1, user_id: 5 } as any);
+    const deleteManySpy = jest.spyOn(prismaService.cart_items, 'deleteMany');
+
+    // Act
+    await service.removeItem(5, 10);
+
+    // Assert — your turn. Was deleteMany called with
+    // `where: { cart_items_id: 10, cart_id: 1 }`?
+    expect(deleteManySpy).toHaveBeenCalledWith({
+      where: { cart_items_id: 10, cart_id: 1 },
+    });
+  });
+
+  it('removeItem does nothing when the user has no cart', async () => {
+    // Arrange
+    jest.spyOn(prismaService.carts, 'findUnique').mockResolvedValue(null);
+    const deleteManySpy = jest.spyOn(prismaService.cart_items, 'deleteMany');
+
+    // Act
+    await service.removeItem(999, 10);
+
+    // Assert — your turn. Was deleteMany never called, since there was no
+    // cart to scope the deletion to?
+    expect(deleteManySpy).not.toHaveBeenCalled();
   });
 });

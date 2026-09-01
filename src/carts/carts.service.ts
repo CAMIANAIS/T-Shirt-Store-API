@@ -132,4 +132,20 @@ export class CartsService {
       subtotal: updated.quantity * Number(updated.price_at_purchase),
     };
   }
+
+  async removeItem(userId: number, itemId: number) {
+    const userCart = await this.prismaService.carts.findUnique({
+      where: { user_id: userId },
+    });
+
+    if (!userCart) {
+      return;
+    }
+    await this.prismaService.cart_items.deleteMany({
+      where: {
+        cart_items_id: itemId,
+        cart_id: userCart.cart_id,
+      },
+    });
+  }
 }

@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -54,5 +55,15 @@ export class CartsController {
       itemId,
       cartItemUpdateDto.quantity,
     );
+  }
+  @UseGuards(JWTAuthGuard, PoliciesGuard)
+  @CheckPolicies((ability: AppAbility) => ability.can('manage', 'Cart'))
+  @HttpCode(204)
+  @Delete('/items/:itemId')
+  async removeItem(
+    @Param('itemId') itemId: number,
+    @CurrentUser() userId: JwtPayload,
+  ): Promise<void> {
+    return this.cartService.removeItem(userId.sub, itemId);
   }
 }

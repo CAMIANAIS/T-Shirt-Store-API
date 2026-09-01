@@ -18,6 +18,7 @@ describe('CartsController', () => {
             getCart: jest.fn(),
             addItem: jest.fn(),
             updateItem: jest.fn(),
+            removeItem: jest.fn(),
           },
         },
       ],
@@ -90,5 +91,18 @@ describe('CartsController', () => {
     // mockLineItem?
     expect(updateItemSpy).toHaveBeenCalledWith(5, 10, 7);
     expect(result).toEqual(mockLineItem);
+  });
+
+  it('removeItem delegates to CartsService.removeItem with user id and itemId', async () => {
+    // Arrange
+    const removeItemSpy = jest
+      .spyOn(cartsService, 'removeItem')
+      .mockResolvedValue(undefined);
+
+    // Act
+    await controller.removeItem(10, { sub: 5 });
+
+    // Assert — your turn. Was removeItem called with (5, 10)?
+    expect(removeItemSpy).toHaveBeenCalledWith(5, 10);
   });
 });
