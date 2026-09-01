@@ -34,4 +34,18 @@ export class EnvironmentVariables {
 
   @IsString()
   NODE_ENV: string;
+
+  @IsString()
+  @Matches(/^sk_(test|live)_/, {
+    message:
+      'STRIPE_SECRET_KEY must be a real Stripe secret key (sk_test_... or sk_live_...)',
+  })
+  STRIPE_SECRET_KEY: string;
+
+  @IsString()
+  @Matches(/^whsec_/, {
+    message:
+      'STRIPE_WEBHOOK_SECRET must be a real Stripe webhook signing secret (whsec_...)',
+  })
+  STRIPE_WEBHOOK_SECRET: string;
 }

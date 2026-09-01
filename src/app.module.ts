@@ -14,6 +14,7 @@ import { VariantsModule } from './variants/variants.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { CartsModule } from './carts/carts.module';
 import { OrdersModule } from './orders/orders.module';
+import { StripeModule } from './stripe/stripe.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { OrdersModule } from './orders/orders.module';
     VariantsModule,
     CartsModule,
     OrdersModule,
+    StripeModule,
   ],
   controllers: [AppController],
   providers: [

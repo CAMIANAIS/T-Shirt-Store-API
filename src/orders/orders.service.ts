@@ -1,13 +1,23 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CartsService } from '../carts/carts.service';
+import { StripeService } from '../stripe/stripe.service';
 import { CreateOrderDto } from './dto/createOrder.dto';
+import { PaymentIntentInputDto } from './dto/paymentIntentInput.dto';
 import { ordersGetPayload } from '../../generated/prisma/models';
+
+export type PaymentIntentResult = {
+  intentId: string;
+  clientSecret: string;
+  amount: number;
+  currency: string;
+};
 
 export type OrderLineItem = {
   productVariantId: number;
@@ -29,6 +39,7 @@ export class OrdersService {
   constructor(
     private prismaService: PrismaService,
     private cartsService: CartsService,
+    private stripeService: StripeService,
   ) {}
 
   private toOrder(
@@ -48,15 +59,11 @@ export class OrdersService {
     };
   }
   async create(userId: number, dto: CreateOrderDto): Promise<Order> {
-    // Your turn. Steps, roughly:
-    // 1. Read the user's cart via this.cartsService.getCart(userId).
     const cart = await this.cartsService.getCart(userId);
-    // 2. 400 if it's empty.
+
     if (cart.items.length === 0) {
       throw new BadRequestException('Cart is empty');
     }
-    // 3. Check each item's stock (product_variants.stock_quantity) —
-    //    409 if any item doesn't have enough.
     for (const item of cart.items) {
       const variant = await this.prismaService.product_variants.findUnique({
         where: { product_variant_id: item.productVariantId },
@@ -73,10 +80,7 @@ export class OrdersService {
         }
       }
     }
-    // 4. Create the order + its order_items (snapshot quantity and
-    //    priceAtPurchase from the cart items) + an order_status_history
-    //    row of 'pending', plus the order_addresses row from dto.shippingAddress
-    //    — all in one Prisma transaction (prismaService.$transaction).
+
     const order = await this.prismaService.orders.create({
       data: {
         user_id: userId,
@@ -112,8 +116,61 @@ export class OrdersService {
       },
       include: { order_items: true },
     });
-    // 5. Do NOT decrement stock or clear the cart here — that happens on
-    //    the Stripe webhook, once payment actually succeeds.
+
     return this.toOrder(order);
+  }
+
+  async createPayment(
+    userId: number,
+    orderId: number,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars -- payment_method_types deliberately deferred, see PaymentIntents.create call below
+    dto: PaymentIntentInputDto,
+  ): Promise<PaymentIntentResult> {
+    // Your turn. Steps, roughly:
+    // 1. Fetch the order by orderId, including its order_status_history
+    //    (prismaService.orders.findUnique — remember the compound-key
+    //    lesson from likes doesn't apply here, order_id is a plain PK).
+    //    404 if it doesn't exist.
+    const order = await this.prismaService.orders.findUnique({
+      where: { order_id: orderId },
+    });
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+    // 2. 403 (ForbiddenException) if order.user_id !== userId — this
+    //    isn't your order to pay for.
+    if (order.user_id !== userId) {
+      throw new ForbiddenException('You are not allowed');
+    }
+    // 3. Figure out the order's CURRENT status from order_status_history
+    //    (most recent row by created_at). 409 (ConflictException) if
+    //    it's not 'pending' — spec says "Order must be in pending status."
+    const currentStatus =
+      await this.prismaService.order_status_history.findFirst({
+        where: { order_id: orderId },
+        orderBy: { created_at: 'desc' },
+      });
+    if (currentStatus?.status !== 'pending') {
+      throw new ConflictException('Order must be in pending status');
+    }
+    // 4. Call this.stripeService.paymentIntents.create({ amount, currency,
+    //    metadata: { orderId: String(orderId) } }). amount is order.total_amount
+    //    (already in cents, per how you built `create`). currency: 'usd'.
+    //    Leave payment_method_types out for now — that's a deliberate
+    //    Stripe Elements default, not something dto.paymentMethod maps
+    //    to cleanly (remember the apple_pay/google_pay flag from earlier).
+    const intent = await this.stripeService.paymentIntents.create({
+      amount: Number(order.total_amount),
+      currency: 'usd',
+      metadata: { orderId: String(orderId) },
+    });
+    // 5. Return { intentId: intent.id, clientSecret: intent.client_secret!,
+    //    amount: intent.amount, currency: intent.currency }.
+    return {
+      intentId: intent.id,
+      clientSecret: intent.client_secret ? intent.client_secret : '',
+      amount: intent.amount,
+      currency: intent.currency,
+    };
   }
 }

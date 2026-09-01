@@ -2,17 +2,21 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { OrdersService } from './orders.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CartsService } from '../carts/carts.service';
+import { StripeService } from '../stripe/stripe.service';
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
 import { CreateOrderDto } from './dto/createOrder.dto';
+import { PaymentIntentInputDto } from './dto/paymentIntentInput.dto';
 
 describe('OrdersService', () => {
   let service: OrdersService;
   let prismaService: PrismaService;
   let cartsService: CartsService;
+  let stripeService: StripeService;
 
   const shippingAddress = {
     street1: '123 Main St',
@@ -33,6 +37,10 @@ describe('OrdersService', () => {
           useValue: {
             orders: {
               create: jest.fn(),
+              findUnique: jest.fn(),
+            },
+            order_status_history: {
+              findFirst: jest.fn(),
             },
             product_variants: {
               findUnique: jest.fn(),
@@ -45,12 +53,21 @@ describe('OrdersService', () => {
             getCart: jest.fn(),
           },
         },
+        {
+          provide: StripeService,
+          useValue: {
+            paymentIntents: {
+              create: jest.fn(),
+            },
+          },
+        },
       ],
     }).compile();
 
     service = module.get<OrdersService>(OrdersService);
     prismaService = module.get<PrismaService>(PrismaService);
     cartsService = module.get<CartsService>(CartsService);
+    stripeService = module.get<StripeService>(StripeService);
   });
 
   it('should be defined', () => {
@@ -218,5 +235,96 @@ describe('OrdersService', () => {
     // `orders.create` never called?
     expect(createSpy).not.toHaveBeenCalled();
     await expect(act).rejects.toThrow(ConflictException);
+  });
+
+  describe('createPayment', () => {
+    const paymentDto: PaymentIntentInputDto = { paymentMethod: 'card' };
+
+    it('creates a Stripe PaymentIntent for a pending order the caller owns', async () => {
+      // Arrange
+      jest.spyOn(prismaService.orders, 'findUnique').mockResolvedValue({
+        order_id: 1,
+        user_id: 7,
+        total_amount: BigInt(5000),
+      } as any);
+      jest
+        .spyOn(prismaService.order_status_history, 'findFirst')
+        .mockResolvedValue({ status: 'pending' } as any);
+      const intentSpy = jest
+        .spyOn(stripeService.paymentIntents, 'create')
+        .mockResolvedValue({
+          id: 'pi_123',
+          client_secret: 'pi_123_secret_abc',
+          amount: 5000,
+          currency: 'usd',
+        } as any);
+
+      // Act
+      const result = await service.createPayment(7, 1, paymentDto);
+
+      // Assert — your turn. Was `paymentIntents.create` called with
+      // amount 5000, currency 'usd', and metadata.orderId '1'? Does
+      // `result` match the PaymentIntentResult shape?
+      expect(intentSpy).toHaveBeenCalled();
+      expect(result).toEqual({
+        intentId: 'pi_123',
+        clientSecret: 'pi_123_secret_abc',
+        amount: 5000,
+        currency: 'usd',
+      });
+    });
+
+    it('throws NotFoundException when the order does not exist', async () => {
+      // Arrange
+      jest.spyOn(prismaService.orders, 'findUnique').mockResolvedValue(null);
+      const intentSpy = jest.spyOn(stripeService.paymentIntents, 'create');
+
+      // Act
+      const act = service.createPayment(7, 999, paymentDto);
+
+      // Assert — your turn. Does it reject with NotFoundException? Was
+      // `paymentIntents.create` never called?
+      await expect(act).rejects.toThrow(NotFoundException);
+      expect(intentSpy).not.toHaveBeenCalled();
+    });
+
+    it('throws ForbiddenException when the order belongs to another user', async () => {
+      // Arrange
+      jest.spyOn(prismaService.orders, 'findUnique').mockResolvedValue({
+        order_id: 1,
+        user_id: 999,
+        total_amount: BigInt(5000),
+      } as any);
+      const intentSpy = jest.spyOn(stripeService.paymentIntents, 'create');
+
+      // Act
+      const act = service.createPayment(7, 1, paymentDto);
+
+      // Assert — your turn. Does it reject with ForbiddenException? Was
+      // `paymentIntents.create` never called?
+      await expect(act).rejects.toThrow(ForbiddenException);
+      expect(intentSpy).not.toHaveBeenCalled();
+    });
+
+    it('throws ConflictException when the order is not pending', async () => {
+      // Arrange
+      jest.spyOn(prismaService.orders, 'findUnique').mockResolvedValue({
+        order_id: 1,
+        user_id: 7,
+        total_amount: BigInt(5000),
+      } as any);
+      jest
+        .spyOn(prismaService.order_status_history, 'findFirst')
+        .mockResolvedValue({ status: 'paid' } as any);
+      const intentSpy = jest.spyOn(stripeService.paymentIntents, 'create');
+
+      // Act
+      const act = service.createPayment(7, 1, paymentDto);
+
+      // Assert — your turn. Does it reject with ConflictException? Was
+      // `paymentIntents.create` never called?
+      expect(intentSpy).not.toHaveBeenCalled();
+      await expect(act).rejects.toThrow(ConflictException);
+    });
   });
 });
