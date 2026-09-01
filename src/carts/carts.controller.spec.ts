@@ -17,6 +17,7 @@ describe('CartsController', () => {
           useValue: {
             getCart: jest.fn(),
             addItem: jest.fn(),
+            updateItem: jest.fn(),
           },
         },
       ],
@@ -66,5 +67,28 @@ describe('CartsController', () => {
     // equal mockCart?
     expect(addItemSpy).toHaveBeenCalledWith(5, dto);
     expect(result).toEqual(mockCart);
+  });
+
+  it('updateItem delegates to CartsService.updateItem with user id, itemId, and quantity', async () => {
+    // Arrange
+    const mockLineItem = {
+      id: 10,
+      productVariantId: 42,
+      quantity: 7,
+      priceAtPurchase: 1500,
+      subtotal: 10500,
+    };
+    const updateItemSpy = jest
+      .spyOn(cartsService, 'updateItem')
+      .mockResolvedValue(mockLineItem);
+
+    // Act
+    const result = await controller.updateItem({ sub: 5 }, { quantity: 7 }, 10);
+
+    // Assert — your turn. Was updateItem called with (5, 10, 7) — three
+    // separate args, not the whole dto object? Does result equal
+    // mockLineItem?
+    expect(updateItemSpy).toHaveBeenCalledWith(5, 10, 7);
+    expect(result).toEqual(mockLineItem);
   });
 });

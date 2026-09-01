@@ -21,6 +21,7 @@ describe('CartsService', () => {
             },
             cart_items: {
               findUnique: jest.fn(),
+              findFirst: jest.fn(),
               update: jest.fn(),
               create: jest.fn(),
             },
@@ -199,5 +200,65 @@ describe('CartsService', () => {
         price_at_purchase: 1500,
       },
     });
+  });
+
+  // updateItem cases
+  it('updateItem updates the quantity and returns the mapped line item', async () => {
+    // Arrange
+    const userCart = { cart_id: 1, user_id: 5 };
+    jest
+      .spyOn(prismaService.carts, 'findUnique')
+      .mockResolvedValue(userCart as any);
+    const existingItem = {
+      cart_items_id: 10,
+      cart_id: 1,
+      product_variant_id: 42,
+      quantity: 2,
+      price_at_purchase: 1500n,
+    };
+    jest
+      .spyOn(prismaService.cart_items, 'findFirst')
+      .mockResolvedValue(existingItem as any);
+    const updateSpy = jest
+      .spyOn(prismaService.cart_items, 'update')
+      .mockResolvedValue({ ...existingItem, quantity: 7 } as any);
+
+    // Act
+    const result = await service.updateItem(5, 10, 7);
+
+    // Assert — your turn. Was findFirst called with
+    // `where: { cart_items_id: 10, cart_id: 1 }` (scoped to this user's
+    // cart, not just any item)? Was update called with
+    // `where: { cart_items_id: 10 }, data: { quantity: 7 }`? Does result
+    // equal `{ id: 10, productVariantId: 42, quantity: 7,
+    // priceAtPurchase: 1500, subtotal: 10500 }` (7 * 1500)?
+    expect(updateSpy).toHaveBeenCalledWith({
+      where: { cart_items_id: 10 },
+      data: { quantity: 7 },
+    });
+    expect(result).toEqual({
+      id: 10,
+      productVariantId: 42,
+      quantity: 7,
+      priceAtPurchase: 1500,
+      subtotal: 10500,
+    });
+  });
+
+  it('updateItem throws NotFoundException when the item does not belong to this user', async () => {
+    // Arrange
+    jest
+      .spyOn(prismaService.carts, 'findUnique')
+      .mockResolvedValue({ cart_id: 1, user_id: 5 } as any);
+    jest.spyOn(prismaService.cart_items, 'findFirst').mockResolvedValue(null);
+    const updateSpy = jest.spyOn(prismaService.cart_items, 'update');
+
+    // Act
+    const act = service.updateItem(5, 999, 7);
+
+    // Assert — your turn. Does it reject with NotFoundException? Was
+    // update never called, since the item lookup failed first?
+    expect(updateSpy).not.toHaveBeenCalled();
+    await expect(act).rejects.toThrow(NotFoundException);
   });
 });
