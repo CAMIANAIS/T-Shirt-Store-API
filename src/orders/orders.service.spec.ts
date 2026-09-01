@@ -254,7 +254,7 @@ describe('OrdersService', () => {
         .spyOn(stripeService.paymentIntents, 'create')
         .mockResolvedValue({
           id: 'pi_123',
-          client_secret: 'pi_123_secret_abc',
+          client_secret: 'fake-client-token-for-tests',
           amount: 5000,
           currency: 'usd',
         } as any);
@@ -268,7 +268,7 @@ describe('OrdersService', () => {
       expect(intentSpy).toHaveBeenCalled();
       expect(result).toEqual({
         intentId: 'pi_123',
-        clientSecret: 'pi_123_secret_abc',
+        clientSecret: 'fake-client-token-for-tests',
         amount: 5000,
         currency: 'usd',
       });

@@ -115,6 +115,11 @@ front-load everything.
 - Don't let Claude write the assertions for code it just wrote, unit or e2e. It will assert the
   behavior it produced, bugs included. Write assertions yourself; Claude can help with mocking
   setup.
+- Fake secret-shaped fixtures (Stripe `client_secret`, API keys, tokens, etc.) in test mocks must
+  not match the real service's actual format — e.g. don't write `pi_123_secret_abc` for a fake
+  Stripe `client_secret`, since that's indistinguishable from a real one to a secret scanner.
+  GitGuardian flagged exactly this as a false positive on a real commit. Use an obviously-fake
+  placeholder instead (`'fake-client-token-for-tests'`), not a string shaped like the real thing.
 
 ## Security — recurring pattern, don't reintroduce it
 
