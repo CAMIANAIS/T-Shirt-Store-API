@@ -19,6 +19,7 @@ describe('CartsController', () => {
             addItem: jest.fn(),
             updateItem: jest.fn(),
             removeItem: jest.fn(),
+            clearCart: jest.fn(),
           },
         },
       ],
@@ -104,5 +105,18 @@ describe('CartsController', () => {
 
     // Assert — your turn. Was removeItem called with (5, 10)?
     expect(removeItemSpy).toHaveBeenCalledWith(5, 10);
+  });
+
+  it('clearCart delegates to CartsService.clearCart with the current user id', async () => {
+    // Arrange
+    const clearCartSpy = jest
+      .spyOn(cartsService, 'clearCart')
+      .mockResolvedValue(undefined);
+
+    // Act
+    await controller.clearCart({ sub: 5 });
+
+    // Assert — your turn. Was clearCart called with 5?
+    expect(clearCartSpy).toHaveBeenCalledWith(5);
   });
 });

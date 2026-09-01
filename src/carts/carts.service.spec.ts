@@ -293,4 +293,37 @@ describe('CartsService', () => {
     // cart to scope the deletion to?
     expect(deleteManySpy).not.toHaveBeenCalled();
   });
+
+  // clearCart cases
+  it("clearCart deletes all items in the user's cart", async () => {
+    // Arrange
+    jest
+      .spyOn(prismaService.carts, 'findUnique')
+      .mockResolvedValue({ cart_id: 1, user_id: 5 } as any);
+    const deleteManySpy = jest.spyOn(prismaService.cart_items, 'deleteMany');
+
+    // Act
+    await service.clearCart(5);
+
+    // Assert — your turn. Was deleteMany called with
+    // `where: { cart_id: 1 }` — no cart_items_id, since this deletes
+    // every item, not just one?
+    expect(deleteManySpy).toHaveBeenCalledWith({
+      where: { cart_id: 1 },
+    });
+  });
+
+  it('clearCart throws NotFoundException when the user has no cart', async () => {
+    // Arrange
+    jest.spyOn(prismaService.carts, 'findUnique').mockResolvedValue(null);
+    const deleteManySpy = jest.spyOn(prismaService.cart_items, 'deleteMany');
+
+    // Act
+    const act = service.clearCart(999);
+
+    // Assert — your turn. Does it reject with NotFoundException? Was
+    // deleteMany never called?
+    expect(deleteManySpy).not.toHaveBeenCalled();
+    await expect(act).rejects.toThrow(NotFoundException);
+  });
 });

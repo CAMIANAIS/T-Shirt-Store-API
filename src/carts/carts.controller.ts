@@ -66,4 +66,12 @@ export class CartsController {
   ): Promise<void> {
     return this.cartService.removeItem(userId.sub, itemId);
   }
+
+  @UseGuards(JWTAuthGuard, PoliciesGuard)
+  @CheckPolicies((ability: AppAbility) => ability.can('manage', 'Cart'))
+  @HttpCode(204)
+  @Delete()
+  async clearCart(@CurrentUser() userId: JwtPayload): Promise<void> {
+    return this.cartService.clearCart(userId.sub);
+  }
 }
