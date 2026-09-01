@@ -20,6 +20,8 @@ describe('ProductsController', () => {
             findOne: jest.fn(),
             update: jest.fn(),
             remove: jest.fn(),
+            likeProduct: jest.fn(),
+            unlikeProduct: jest.fn(),
           },
         },
       ],
@@ -122,6 +124,35 @@ describe('ProductsController', () => {
     // Assert — your turn. Was remove called with 1? Does the controller
     // return undefined (matches remove's Promise<void>)?
     expect(removeSpy).toHaveBeenCalledWith(1);
+    expect(result).toBeUndefined();
+  });
+
+  it('likeProduct delegates to ProductsService.likeProduct with userId.sub and productId', async () => {
+    // Arrange
+    const likeSpy = jest
+      .spyOn(productsService, 'likeProduct')
+      .mockResolvedValue(undefined);
+
+    // Act
+    const result = await controller.likeProduct({ sub: 7 }, 42);
+
+    // Assert — your turn. Was likeProduct called with (7, 42) — note it's
+    // userId.sub, not the whole JwtPayload object?
+    expect(likeSpy).toHaveBeenCalledWith(7, 42);
+    expect(result).toBeUndefined();
+  });
+
+  it('unlikeProduct delegates to ProductsService.unlikeProduct with userId.sub and productId', async () => {
+    // Arrange
+    const unlikeSpy = jest
+      .spyOn(productsService, 'unlikeProduct')
+      .mockResolvedValue(undefined);
+
+    // Act
+    const result = await controller.unlikeProduct({ sub: 7 }, 42);
+
+    // Assert — your turn. Same shape as likeProduct above.
+    expect(unlikeSpy).toHaveBeenCalledWith(7, 42);
     expect(result).toBeUndefined();
   });
 });

@@ -18,7 +18,10 @@ import { ProductUpdateInputDto } from './dto/updateProduct.dto';
 import { PoliciesGuard } from '../casl/policies.guard';
 import { CheckPolicies } from '../casl/policies.decorator';
 import { AppAbility } from '../casl/casl-ability.factory';
-
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+interface JwtPayload {
+  sub: number;
+}
 @Controller('products')
 export class ProductsController {
   constructor(private readonly productService: ProductsService) {}
@@ -72,5 +75,23 @@ export class ProductsController {
   @CheckPolicies((ability: AppAbility) => ability.can('update', 'Product'))
   deactivate(@Param('productId') productId: number) {
     return this.productService.deactivate(productId);
+  }
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(JWTAuthGuard)
+  @Post(':productId/likes')
+  likeProduct(
+    @CurrentUser() userId: JwtPayload,
+    @Param('productId') productId: number,
+  ) {
+    return this.productService.likeProduct(userId.sub, productId);
+  }
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(JWTAuthGuard)
+  @Delete(':productId/likes')
+  unlikeProduct(
+    @CurrentUser() userId: JwtPayload,
+    @Param('productId') productId: number,
+  ) {
+    return this.productService.unlikeProduct(userId.sub, productId);
   }
 }

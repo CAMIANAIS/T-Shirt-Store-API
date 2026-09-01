@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ProductInputDto } from './dto/createProduct.dto';
-import { productsModel } from 'generated/prisma/models';
+import { productsModel } from '../../generated/prisma/models';
 import { ProductUpdateInputDto } from './dto/updateProduct.dto';
 
 export type Product = {
@@ -158,5 +158,30 @@ export class ProductsService {
     });
 
     return this.toProduct(updated);
+  }
+
+  async likeProduct(userId: number, productId: number): Promise<void> {
+    await this.findOne(productId);
+
+    await this.prismaService.product_likes.upsert({
+      where: {
+        user_id_product_id: { user_id: userId, product_id: productId },
+      },
+      create: { user_id: userId, product_id: productId },
+      update: {},
+    });
+    return;
+  }
+
+  async unlikeProduct(userId: number, productId: number) {
+    await this.findOne(productId);
+
+    await this.prismaService.product_likes.deleteMany({
+      where: {
+        user_id: userId,
+        product_id: productId,
+      },
+    });
+    return;
   }
 }

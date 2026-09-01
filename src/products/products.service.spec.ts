@@ -22,6 +22,10 @@ describe('ProductsService', () => {
               findFirst: jest.fn(),
               update: jest.fn(),
             },
+            product_likes: {
+              upsert: jest.fn(),
+              deleteMany: jest.fn(),
+            },
           },
         },
       ],
@@ -439,6 +443,68 @@ describe('ProductsService', () => {
       await expect(act).rejects.toThrow(
         new ConflictException('Cannot deactivate a discontinued product'),
       );
+    });
+  });
+
+  describe('likeProduct', () => {
+    it('upserts on the compound key when the product exists', async () => {
+      jest.spyOn(service, 'findOne').mockResolvedValue({} as any);
+      const upsertSpy = jest
+        .spyOn(prismaService.product_likes, 'upsert')
+        .mockResolvedValue({} as any);
+
+      await service.likeProduct(7, 42);
+
+      // Assert — your turn. Was `upsert` called with the right `where`
+      // (compound key `user_id_product_id`), `create`, and an empty `update`?
+      expect(upsertSpy).toHaveBeenCalledWith({
+        where: { user_id_product_id: { user_id: 7, product_id: 42 } },
+        create: { user_id: 7, product_id: 42 },
+        update: {},
+      });
+    });
+
+    it('throws 404 and never calls upsert when the product does not exist', async () => {
+      jest.spyOn(service, 'findOne').mockRejectedValue(new NotFoundException());
+      const upsertSpy = jest.spyOn(prismaService.product_likes, 'upsert');
+
+      const act = service.likeProduct(7, 999);
+
+      // Assert — your turn. Does it reject with NotFoundException? Was
+      // `upsert` never called, since `findOne` threw first?
+      expect(upsertSpy).not.toHaveBeenCalled();
+      await expect(act).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('unlikeProduct', () => {
+    it('calls deleteMany scoped to the user and product', async () => {
+      jest.spyOn(service, 'findOne').mockResolvedValue({} as any);
+      const deleteManySpy = jest
+        .spyOn(prismaService.product_likes, 'deleteMany')
+        .mockResolvedValue({ count: 1 });
+
+      await service.unlikeProduct(7, 42);
+
+      // Assert — your turn. Was `deleteMany` called with `where: { user_id, product_id }`?
+      expect(deleteManySpy).toHaveBeenCalledWith({
+        where: { user_id: 7, product_id: 42 },
+      });
+    });
+
+    it('throws 404 and never calls deleteMany when the product does not exist', async () => {
+      jest.spyOn(service, 'findOne').mockRejectedValue(new NotFoundException());
+      const deleteManySpy = jest.spyOn(
+        prismaService.product_likes,
+        'deleteMany',
+      );
+
+      const act = service.unlikeProduct(7, 999);
+
+      // Assert — your turn. Does it reject with NotFoundException? Was
+      // `deleteMany` never called, since `findOne` threw first?
+      expect(deleteManySpy).not.toHaveBeenCalled();
+      await expect(act).rejects.toThrow(NotFoundException);
     });
   });
 });
