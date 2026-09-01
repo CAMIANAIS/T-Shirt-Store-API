@@ -92,7 +92,7 @@ CREATE TABLE Product_Images (
 CREATE TABLE Orders(
     order_id SERIAL PRIMARY KEY,
     total_amount BIGINT NOT NULL CHECK (total_amount >= 0),
-    payment_method VARCHAR(50) NOT NULL CHECK (payment_method IN ('payment_link', 'payment_intent')),
+    payment_method VARCHAR(50) CHECK (payment_method IN ('payment_link', 'payment_intent')),
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     user_id INTEGER not null,

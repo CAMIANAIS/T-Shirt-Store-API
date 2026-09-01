@@ -17,5 +17,6 @@ import { CaslModule } from '../casl/casl.module';
     AuthModule,
     CaslModule,
   ],
+  exports: [CartsService],
 })
 export class CartsModule {}

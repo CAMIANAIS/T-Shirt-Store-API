@@ -99,3 +99,14 @@ into two distinct states on the existing `status` field: `inactive` (reversible 
 `POST /products/:productId/activate`/`deactivate` endpoints) and `discontinued` (permanent — both
 endpoints reject it with 409). Confirms this wasn't an oversight — a hard delete on a product
 with order history was never the goal.
+
+17. Orders.payment_method — made nullable
+Decision: an order is created (POST /orders) before payment method is chosen — neither the
+Payment Links flow (Stripe hosts the checkout, customer picks method there) nor the Payment
+Intents flow (client attaches a method via Stripe Elements after the intent exists) requires a
+method upfront. Verified against the real Stripe API docs, not assumed: both checkout.session.completed
+and payment_intent.succeeded webhook payloads resolve to a payment method only via an ID chain
+that needs expanding, confirming the method is genuinely decided at the customer-interaction step,
+not before. `payment_method` dropped its `NOT NULL` (both in schemaERD.sql and schema.prisma);
+the CHECK constraint stays as-is since Postgres CHECK constraints pass on NULL automatically. Gets
+populated by the relevant webhook handler once payment actually completes.

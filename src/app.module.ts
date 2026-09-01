@@ -13,6 +13,7 @@ import { ProductsModule } from './products/products.module';
 import { VariantsModule } from './variants/variants.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { CartsModule } from './carts/carts.module';
+import { OrdersModule } from './orders/orders.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { CartsModule } from './carts/carts.module';
     ProductsModule,
     VariantsModule,
     CartsModule,
+    OrdersModule,
   ],
   controllers: [AppController],
   providers: [
