@@ -126,25 +126,18 @@ export class OrdersService {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars -- payment_method_types deliberately deferred, see PaymentIntents.create call below
     dto: PaymentIntentInputDto,
   ): Promise<PaymentIntentResult> {
-    // Your turn. Steps, roughly:
-    // 1. Fetch the order by orderId, including its order_status_history
-    //    (prismaService.orders.findUnique — remember the compound-key
-    //    lesson from likes doesn't apply here, order_id is a plain PK).
-    //    404 if it doesn't exist.
     const order = await this.prismaService.orders.findUnique({
       where: { order_id: orderId },
+      include: { order_items: true },
     });
     if (!order) {
       throw new NotFoundException('Order not found');
     }
-    // 2. 403 (ForbiddenException) if order.user_id !== userId — this
-    //    isn't your order to pay for.
+
     if (order.user_id !== userId) {
       throw new ForbiddenException('You are not allowed');
     }
-    // 3. Figure out the order's CURRENT status from order_status_history
-    //    (most recent row by created_at). 409 (ConflictException) if
-    //    it's not 'pending' — spec says "Order must be in pending status."
+
     const currentStatus =
       await this.prismaService.order_status_history.findFirst({
         where: { order_id: orderId },
@@ -153,12 +146,18 @@ export class OrdersService {
     if (currentStatus?.status !== 'pending') {
       throw new ConflictException('Order must be in pending status');
     }
-    // 4. Call this.stripeService.paymentIntents.create({ amount, currency,
-    //    metadata: { orderId: String(orderId) } }). amount is order.total_amount
-    //    (already in cents, per how you built `create`). currency: 'usd'.
-    //    Leave payment_method_types out for now — that's a deliberate
-    //    Stripe Elements default, not something dto.paymentMethod maps
-    //    to cleanly (remember the apple_pay/google_pay flag from earlier).
+
+    for (const item of order.order_items) {
+      const variant = await this.prismaService.product_variants.findUnique({
+        where: { product_variant_id: item.product_variant_id },
+      });
+      if (!variant || variant.stock_quantity < item.quantity) {
+        throw new ConflictException(
+          `Variant ${item.product_variant_id} does not have enough stock`,
+        );
+      }
+    }
+
     const intent = await this.stripeService.paymentIntents.create({
       amount: Number(order.total_amount),
       currency: 'usd',
@@ -169,8 +168,7 @@ export class OrdersService {
       // email during manual CLI testing).
       automatic_payment_methods: { enabled: true, allow_redirects: 'never' },
     });
-    // 5. Return { intentId: intent.id, clientSecret: intent.client_secret!,
-    //    amount: intent.amount, currency: intent.currency }.
+
     return {
       intentId: intent.id,
       clientSecret: intent.client_secret ? intent.client_secret : '',

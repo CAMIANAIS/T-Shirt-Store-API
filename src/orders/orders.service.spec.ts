@@ -246,10 +246,17 @@ describe('OrdersService', () => {
         order_id: 1,
         user_id: 7,
         total_amount: BigInt(5000),
+        order_items: [{ product_variant_id: 5, quantity: 2 }],
       } as any);
       jest
         .spyOn(prismaService.order_status_history, 'findFirst')
         .mockResolvedValue({ status: 'pending' } as any);
+      jest
+        .spyOn(prismaService.product_variants, 'findUnique')
+        .mockResolvedValue({
+          product_variant_id: 5,
+          stock_quantity: 10,
+        } as any);
       const intentSpy = jest
         .spyOn(stripeService.paymentIntents, 'create')
         .mockResolvedValue({
@@ -316,6 +323,34 @@ describe('OrdersService', () => {
       jest
         .spyOn(prismaService.order_status_history, 'findFirst')
         .mockResolvedValue({ status: 'paid' } as any);
+      const intentSpy = jest.spyOn(stripeService.paymentIntents, 'create');
+
+      // Act
+      const act = service.createPayment(7, 1, paymentDto);
+
+      // Assert — your turn. Does it reject with ConflictException? Was
+      // `paymentIntents.create` never called?
+      expect(intentSpy).not.toHaveBeenCalled();
+      await expect(act).rejects.toThrow(ConflictException);
+    });
+
+    it('throws ConflictException when stock dropped below the order quantity since it was created', async () => {
+      // Arrange
+      jest.spyOn(prismaService.orders, 'findUnique').mockResolvedValue({
+        order_id: 1,
+        user_id: 7,
+        total_amount: BigInt(5000),
+        order_items: [{ product_variant_id: 5, quantity: 2 }],
+      } as any);
+      jest
+        .spyOn(prismaService.order_status_history, 'findFirst')
+        .mockResolvedValue({ status: 'pending' } as any);
+      jest
+        .spyOn(prismaService.product_variants, 'findUnique')
+        .mockResolvedValue({
+          product_variant_id: 5,
+          stock_quantity: 1,
+        } as any);
       const intentSpy = jest.spyOn(stripeService.paymentIntents, 'create');
 
       // Act
