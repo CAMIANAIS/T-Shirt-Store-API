@@ -4,7 +4,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { rawBody: true });
   // Known gap, deliberately deferred: no origin restriction (allows '*') since no
   // frontend origin exists yet to restrict it to. Revisit once one does.
   app.enableCors();

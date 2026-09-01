@@ -15,6 +15,7 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { CartsModule } from './carts/carts.module';
 import { OrdersModule } from './orders/orders.module';
 import { StripeModule } from './stripe/stripe.module';
+import { WebhooksModule } from './webhooks/webhooks.module';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { StripeModule } from './stripe/stripe.module';
     CartsModule,
     OrdersModule,
     StripeModule,
+    WebhooksModule,
   ],
   controllers: [AppController],
   providers: [

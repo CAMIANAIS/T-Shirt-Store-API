@@ -163,6 +163,11 @@ export class OrdersService {
       amount: Number(order.total_amount),
       currency: 'usd',
       metadata: { orderId: String(orderId) },
+      // No frontend exists to handle a redirect-based payment method, so
+      // never allow one — this also means `return_url` is never required
+      // at confirmation time (this is what triggered Stripe's warning
+      // email during manual CLI testing).
+      automatic_payment_methods: { enabled: true, allow_redirects: 'never' },
     });
     // 5. Return { intentId: intent.id, clientSecret: intent.client_secret!,
     //    amount: intent.amount, currency: intent.currency }.
