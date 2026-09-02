@@ -10,8 +10,12 @@ import { CartsService } from '../carts/carts.service';
 import { StripeService } from '../stripe/stripe.service';
 import { CreateOrderDto } from './dto/createOrder.dto';
 import { PaymentIntentInputDto } from './dto/paymentIntentInput.dto';
-import { ordersGetPayload } from '../../generated/prisma/models';
+import {
+  order_status_historyModel,
+  ordersGetPayload,
+} from '../../generated/prisma/models';
 import { OrderParamsDto } from './dto/orderParams.dto';
+import { OrderStatusHistoryDto } from './dto/orderStatusHistory.dto';
 
 export type PaymentIntentResult = {
   intentId: string;
@@ -57,6 +61,15 @@ export class OrdersService {
       })),
       createdAt: row.created_at,
       updatedAt: row.updated_at,
+    };
+  }
+  private toOrderStatusHistory(
+    row: order_status_historyModel,
+  ): OrderStatusHistoryDto {
+    return {
+      status: row.status,
+      changedAt: row.created_at,
+      changedBy: row.changed_by_email ?? 'system',
     };
   }
   async create(userId: number, dto: CreateOrderDto): Promise<Order> {
@@ -210,5 +223,114 @@ export class OrdersService {
       orderBy: { created_at: 'desc' },
     });
     return orders.map((order) => this.toOrder(order));
+  }
+
+  async findOne(
+    orderId: number,
+    userId: number,
+    isManager: boolean,
+  ): Promise<Order> {
+    const order = await this.prismaService.orders.findFirst({
+      where: {
+        order_id: orderId,
+      },
+      include: { order_items: true },
+    });
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+    if (!isManager && order.user_id !== userId) {
+      throw new ForbiddenException('You are not allowed');
+    }
+    return this.toOrder(order);
+  }
+
+  async getStatusHistory(
+    orderId: number,
+    limit?: number,
+    offset?: number,
+  ): Promise<OrderStatusHistoryDto[]> {
+    const statusHistory =
+      await this.prismaService.order_status_history.findMany({
+        where: { order_id: orderId },
+        orderBy: { created_at: 'desc' },
+        take: limit,
+        skip: offset,
+      });
+    return statusHistory.map((row) => this.toOrderStatusHistory(row));
+  }
+  async postStatusHistory(
+    orderId: number,
+    status: string,
+    changedByEmail: string,
+    changedByUserId: number,
+  ): Promise<OrderStatusHistoryDto> {
+    const currentStatus =
+      await this.prismaService.order_status_history.findFirst({
+        where: { order_id: orderId },
+        orderBy: { created_at: 'desc' },
+      });
+
+    const isLegal =
+      (currentStatus?.status === 'paid' && status === 'processing') ||
+      (currentStatus?.status === 'processing' && status === 'shipped');
+
+    if (!isLegal) {
+      throw new ConflictException('Invalid status transition');
+    }
+
+    const orderStatusHistory =
+      await this.prismaService.order_status_history.create({
+        data: {
+          order_id: orderId,
+          status,
+          changed_by_type: 'user',
+          changed_by_email: changedByEmail,
+          changed_by_user_id: changedByUserId,
+        },
+      });
+    return this.toOrderStatusHistory(orderStatusHistory);
+  }
+  async cancelOrder(
+    orderId: number,
+    userId: number,
+    changedByEmail: string,
+  ): Promise<Order> {
+    const order = await this.prismaService.orders.findFirst({
+      where: {
+        order_id: orderId,
+      },
+      include: { order_items: true },
+    });
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+    if (order.user_id !== userId) {
+      throw new ForbiddenException('You are not allowed');
+    }
+    const currentStatus =
+      await this.prismaService.order_status_history.findFirst({
+        where: { order_id: orderId },
+        orderBy: { created_at: 'desc' },
+      });
+    const alreadyFinal =
+      currentStatus?.status === 'cancelled' ||
+      currentStatus?.status === 'delivered' ||
+      currentStatus?.status === 'shipped';
+
+    if (alreadyFinal) {
+      throw new ConflictException('Order cannot be cancelled at this stage');
+    }
+
+    await this.prismaService.order_status_history.create({
+      data: {
+        order_id: orderId,
+        status: 'cancelled',
+        changed_by_type: 'user',
+        changed_by_email: changedByEmail,
+        changed_by_user_id: userId,
+      },
+    });
+    return this.toOrder(order);
   }
 }

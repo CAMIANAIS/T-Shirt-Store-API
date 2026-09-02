@@ -23,8 +23,16 @@ interface Cart {
 export interface JwtUser {
   sub: number;
   role: string;
+  email: string;
 }
-type Action = 'manage' | 'create' | 'read' | 'update' | 'delete';
+type Action =
+  | 'manage'
+  | 'create'
+  | 'read'
+  | 'update'
+  | 'delete'
+  | 'cancel'
+  | 'advanceStatus';
 type Subject =
   InferSubjects<Order | Product | Cart> | 'Order' | 'Product' | 'Cart';
 export type AppAbility = MongoAbility<[action: Action, subject: Subject]>;
@@ -35,12 +43,12 @@ export class CaslAbilityFactory {
     if (user.role === 'manager') {
       can('manage', 'Product');
       can('read', 'Order');
-      can('update', 'Order', ['status']);
+      can('advanceStatus', 'Order', ['status']);
     }
     if (user.role === 'client') {
       can('create', 'Order', { user_id: user.sub });
       can('read', 'Order', { user_id: user.sub });
-      can('update', 'Order', ['status'], { user_id: user.sub });
+      can('cancel', 'Order', { user_id: user.sub });
       can('read', 'Product');
       can('manage', 'Cart', { user_id: user.sub });
     }

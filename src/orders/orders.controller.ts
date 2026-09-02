@@ -5,6 +5,7 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  Patch,
   Post,
   Query,
   UseGuards,
@@ -18,10 +19,8 @@ import { CheckPolicies } from '../casl/policies.decorator';
 import { AppAbility } from '../casl/casl-ability.factory';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { OrderParamsDto } from './dto/orderParams.dto';
-
-interface JwtPayload {
-  sub: number;
-}
+import type { JwtUser } from '../casl/casl-ability.factory';
+import { UpdateOrderStatusDto } from './dto/updateOrderStatus.dto';
 
 @Controller('orders')
 export class OrdersController {
@@ -31,7 +30,7 @@ export class OrdersController {
   @UseGuards(JWTAuthGuard, PoliciesGuard)
   @CheckPolicies((ability: AppAbility) => ability.can('create', 'Order'))
   @Post()
-  create(@CurrentUser() userId: JwtPayload, @Body() dto: CreateOrderDto) {
+  create(@CurrentUser() userId: JwtUser, @Body() dto: CreateOrderDto) {
     return this.ordersService.create(userId.sub, dto);
   }
 
@@ -39,7 +38,7 @@ export class OrdersController {
   @CheckPolicies((ability: AppAbility) => ability.can('read', 'Order'))
   @Post(':orderId/payment')
   createPayment(
-    @CurrentUser() userId: JwtPayload,
+    @CurrentUser() userId: JwtUser,
     @Param('orderId') orderId: number,
     @Body() dto: PaymentIntentInputDto,
   ) {
@@ -51,5 +50,48 @@ export class OrdersController {
   @Get()
   getAllOrders(@Query() dto: OrderParamsDto) {
     return this.ordersService.getOrders(dto);
+  }
+  @UseGuards(JWTAuthGuard, PoliciesGuard)
+  @CheckPolicies((ability: AppAbility) => ability.can('read', 'Order'))
+  @Get(':orderId')
+  findOne(@CurrentUser() user: JwtUser, @Param('orderId') orderId: number) {
+    return this.ordersService.findOne(
+      orderId,
+      user.sub,
+      user.role === 'manager',
+    );
+  }
+
+  @UseGuards(JWTAuthGuard, PoliciesGuard)
+  @CheckPolicies((ability: AppAbility) => ability.can('read', 'Order'))
+  @Get(':orderId/status-history')
+  getStatusHistory(
+    @Param('orderId') orderId: number,
+    @Query('limit') limit: number,
+    @Query('offset') offset: number,
+  ) {
+    return this.ordersService.getStatusHistory(orderId, limit, offset);
+  }
+  @UseGuards(JWTAuthGuard, PoliciesGuard)
+  @CheckPolicies((ability: AppAbility) => ability.can('advanceStatus', 'Order'))
+  @Patch(':orderId/status')
+  postStatusHistory(
+    @CurrentUser() user: JwtUser,
+    @Param('orderId') orderId: number,
+    @Body() dto: UpdateOrderStatusDto,
+  ) {
+    return this.ordersService.postStatusHistory(
+      orderId,
+      dto.status,
+      user.email,
+      user.sub,
+    );
+  }
+
+  @UseGuards(JWTAuthGuard, PoliciesGuard)
+  @CheckPolicies((ability: AppAbility) => ability.can('cancel', 'Order'))
+  @Post(':orderId/cancel')
+  cancelOrder(@CurrentUser() user: JwtUser, @Param('orderId') orderId: number) {
+    return this.ordersService.cancelOrder(orderId, user.sub, user.email);
   }
 }

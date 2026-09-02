@@ -28,6 +28,15 @@ describe('OrdersService', () => {
   };
   const dto: CreateOrderDto = { shippingAddress };
 
+  const orderRow = {
+    order_id: 1,
+    user_id: 7,
+    total_amount: BigInt(5000),
+    created_at: new Date('2026-01-01'),
+    updated_at: new Date('2026-01-01'),
+    order_items: [],
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -39,10 +48,12 @@ describe('OrdersService', () => {
               create: jest.fn(),
               findUnique: jest.fn(),
               findMany: jest.fn(),
+              findFirst: jest.fn(),
             },
             order_status_history: {
               findFirst: jest.fn(),
               findMany: jest.fn(),
+              create: jest.fn(),
             },
             product_variants: {
               findUnique: jest.fn(),
@@ -496,6 +507,229 @@ describe('OrdersService', () => {
           skip: 20,
         }),
       );
+    });
+  });
+
+  describe('findOne', () => {
+    it('returns the order when the caller is its owner', async () => {
+      // Arrange
+      jest.spyOn(prismaService.orders, 'findFirst').mockResolvedValue({
+        ...orderRow,
+        order_items: [],
+      } as any);
+
+      // Act
+      const result = await service.findOne(1, 7, false);
+
+      expect(result).toEqual(expect.objectContaining({ id: 1, userId: 7 }));
+    });
+
+    it('throws NotFoundException when the order does not exist', async () => {
+      // Arrange
+      jest.spyOn(prismaService.orders, 'findFirst').mockResolvedValue(null);
+
+      // Act
+      const act = service.findOne(999, 7, false);
+
+      // Assert — your turn. Does it reject with NotFoundException?
+      await expect(act).rejects.toThrow(NotFoundException);
+    });
+
+    it('throws ForbiddenException when the order belongs to another user', async () => {
+      // Arrange
+      jest.spyOn(prismaService.orders, 'findFirst').mockResolvedValue({
+        ...orderRow,
+        user_id: 999,
+        order_items: [],
+      } as any);
+
+      // Act
+      const act = service.findOne(1, 7, false);
+
+      // Assert — your turn. Does it reject with ForbiddenException?
+      await expect(act).rejects.toThrow(ForbiddenException);
+    });
+
+    it('allows a manager (isManager: true) to view any order', async () => {
+      // Arrange
+      jest.spyOn(prismaService.orders, 'findFirst').mockResolvedValue({
+        ...orderRow,
+        user_id: 999,
+        order_items: [],
+      } as any);
+
+      // Act
+      const result = await service.findOne(1, 7, true);
+
+      // Assert — your turn. Does it resolve (no exception), with the
+      // mapped Order?
+      expect(result).toEqual(expect.objectContaining({ id: 1 }));
+    });
+  });
+
+  describe('getStatusHistory', () => {
+    it('maps status history rows to the response DTO shape', async () => {
+      // Arrange
+      jest
+        .spyOn(prismaService.order_status_history, 'findMany')
+        .mockResolvedValue([
+          {
+            order_status_history_id: 1,
+            order_id: 1,
+            status: 'paid',
+            created_at: new Date('2026-01-02'),
+            changed_by_type: 'system',
+            changed_by_user_id: null,
+            changed_by_email: null,
+          },
+        ]);
+
+      // Act
+      const result = await service.getStatusHistory(1, 20, 0);
+
+      // Assert — your turn. Does `result` have one entry with
+      // `status: 'paid'`, `changedAt` matching the row's `created_at`,
+      // and `changedBy` falling back to `'system'` since
+      // `changed_by_email` was null?
+      expect(result).toHaveLength(1);
+      expect(result[0]).toEqual(
+        expect.objectContaining({
+          status: 'paid',
+          changedAt: new Date('2026-01-02'),
+          changedBy: 'system',
+        }),
+      );
+    });
+  });
+
+  describe('postStatusHistory', () => {
+    it('advances status from paid to processing', async () => {
+      // Arrange
+      jest
+        .spyOn(prismaService.order_status_history, 'findFirst')
+        .mockResolvedValue({ status: 'paid' } as any);
+      const createSpy = jest
+        .spyOn(prismaService.order_status_history, 'create')
+        .mockResolvedValue({
+          order_status_history_id: 2,
+          order_id: 1,
+          status: 'processing',
+          created_at: new Date('2026-01-03'),
+          changed_by_type: 'user',
+          changed_by_user_id: 3,
+          changed_by_email: 'manager@example.com',
+        });
+
+      // Act
+      const result = await service.postStatusHistory(
+        1,
+        'processing',
+        'manager@example.com',
+        3,
+      );
+
+      // Assert — your turn. Was `create` called with the right `data`
+      // (order_id, status, changed_by_type: 'user', email, userId)?
+      expect(createSpy).toHaveBeenCalledWith({
+        data: {
+          order_id: 1,
+          status: 'processing',
+          changed_by_type: 'user',
+          changed_by_email: 'manager@example.com',
+          changed_by_user_id: 3,
+        },
+      });
+      expect(result.status).toBe('processing');
+    });
+
+    it('throws ConflictException on an illegal transition', async () => {
+      // Arrange — order is still 'pending', but the request asks to jump
+      // straight to 'shipped'.
+      jest
+        .spyOn(prismaService.order_status_history, 'findFirst')
+        .mockResolvedValue({ status: 'pending' } as any);
+      const createSpy = jest.spyOn(
+        prismaService.order_status_history,
+        'create',
+      );
+
+      // Act
+      const act = service.postStatusHistory(
+        1,
+        'shipped',
+        'manager@example.com',
+        3,
+      );
+
+      // Assert — your turn. Does it reject with ConflictException? Was
+      // `create` never called?
+      await expect(act).rejects.toThrow(ConflictException);
+      expect(createSpy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('cancelOrder', () => {
+    it('cancels a pending order the caller owns', async () => {
+      // Arrange
+      jest.spyOn(prismaService.orders, 'findFirst').mockResolvedValue({
+        ...orderRow,
+        order_items: [],
+      } as any);
+      jest
+        .spyOn(prismaService.order_status_history, 'findFirst')
+        .mockResolvedValue({ status: 'pending' } as any);
+      const createSpy = jest.spyOn(
+        prismaService.order_status_history,
+        'create',
+      );
+
+      // Act
+      const result = await service.cancelOrder(1, 7, 'client@example.com');
+
+      // Assert — your turn. Was `create` called with `status: 'cancelled'`?
+      // Does `result` have the mapped Order shape?
+      expect(createSpy).toHaveBeenCalledWith({
+        data: expect.objectContaining({ status: 'cancelled' }),
+      });
+      expect(result).toEqual(expect.objectContaining({ id: 1, userId: 7 }));
+    });
+
+    it('throws ConflictException when the order is already shipped', async () => {
+      // Arrange
+      jest.spyOn(prismaService.orders, 'findFirst').mockResolvedValue({
+        ...orderRow,
+        order_items: [],
+      } as any);
+      jest
+        .spyOn(prismaService.order_status_history, 'findFirst')
+        .mockResolvedValue({ status: 'shipped' } as any);
+      const createSpy = jest.spyOn(
+        prismaService.order_status_history,
+        'create',
+      );
+
+      // Act
+      const act = service.cancelOrder(1, 7, 'client@example.com');
+
+      // Assert — your turn. Does it reject with ConflictException? Was
+      // `create` never called?
+      await expect(act).rejects.toThrow(ConflictException);
+      expect(createSpy).not.toHaveBeenCalled();
+    });
+
+    it('throws ForbiddenException when the order belongs to another user', async () => {
+      // Arrange
+      jest.spyOn(prismaService.orders, 'findFirst').mockResolvedValue({
+        ...orderRow,
+        user_id: 999,
+        order_items: [],
+      } as any);
+
+      // Act
+      const act = service.cancelOrder(1, 7, 'client@example.com');
+
+      // Assert — your turn. Does it reject with ForbiddenException?
+      await expect(act).rejects.toThrow(ForbiddenException);
     });
   });
 });

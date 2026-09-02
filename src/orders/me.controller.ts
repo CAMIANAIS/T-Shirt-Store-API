@@ -6,10 +6,7 @@ import { PoliciesGuard } from '../casl/policies.guard';
 import { CheckPolicies } from '../casl/policies.decorator';
 import { AppAbility } from '../casl/casl-ability.factory';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-
-interface JwtPayload {
-  sub: number;
-}
+import type { JwtUser } from '../casl/casl-ability.factory';
 
 @Controller('me')
 export class MeController {
@@ -18,7 +15,7 @@ export class MeController {
   @UseGuards(JWTAuthGuard, PoliciesGuard)
   @CheckPolicies((ability: AppAbility) => ability.can('read', 'Order'))
   @Get('orders')
-  getMyOrders(@CurrentUser() userId: JwtPayload, @Query() dto: OrderParamsDto) {
+  getMyOrders(@CurrentUser() userId: JwtUser, @Query() dto: OrderParamsDto) {
     return this.ordersService.getOrders(dto, userId.sub);
   }
 }
