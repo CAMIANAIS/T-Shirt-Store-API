@@ -94,4 +94,14 @@ export class ProductsController {
   ) {
     return this.productService.unlikeProduct(userId.sub, productId);
   }
+
+  @HttpCode(HttpStatus.CREATED)
+  @UseGuards(JWTAuthGuard)
+  @Post(':productId/paymentLink')
+  createPaymentLink(
+    @CurrentUser() userId: JwtPayload,
+    @Param('productId') productId: number,
+  ) {
+    return this.productService.createPaymentLink(userId.sub, productId);
+  }
 }

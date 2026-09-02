@@ -4,10 +4,12 @@ import { PrismaService } from '../prisma/prisma.service';
 import { ProductInputDto } from './dto/createProduct.dto';
 import { ProductUpdateInputDto } from './dto/updateProduct.dto';
 import { ConflictException, NotFoundException } from '@nestjs/common';
+import { StripeService } from '../stripe/stripe.service';
 
 describe('ProductsService', () => {
   let service: ProductsService;
   let prismaService: PrismaService;
+  let stripeService: StripeService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -26,6 +28,20 @@ describe('ProductsService', () => {
               upsert: jest.fn(),
               deleteMany: jest.fn(),
             },
+            product_variants: {
+              findMany: jest.fn(),
+            },
+            prices_history: {
+              findFirst: jest.fn(),
+            },
+          },
+        },
+        {
+          provide: StripeService,
+          useValue: {
+            paymentLinks: {
+              create: jest.fn(),
+            },
           },
         },
       ],
@@ -33,6 +49,7 @@ describe('ProductsService', () => {
 
     service = module.get<ProductsService>(ProductsService);
     prismaService = module.get<PrismaService>(PrismaService);
+    stripeService = module.get<StripeService>(StripeService);
   });
 
   it('should be defined', () => {
@@ -504,6 +521,88 @@ describe('ProductsService', () => {
       // Assert — your turn. Does it reject with NotFoundException? Was
       // `deleteMany` never called, since `findOne` threw first?
       expect(deleteManySpy).not.toHaveBeenCalled();
+      await expect(act).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('createPaymentLink', () => {
+    it('creates a Stripe Payment Link when the product has exactly one variant', async () => {
+      // Arrange
+      jest.spyOn(service, 'findOne').mockResolvedValue({
+        productId: 42,
+        name: 'summer-tshirt',
+      } as any);
+      jest
+        .spyOn(prismaService.product_variants, 'findMany')
+        .mockResolvedValue([{ product_variant_id: 5, product_id: 42 }] as any);
+      jest
+        .spyOn(prismaService.prices_history, 'findFirst')
+        .mockResolvedValue({ price: BigInt(2500) } as any);
+      const createLinkSpy = jest
+        .spyOn(stripeService.paymentLinks, 'create')
+        .mockResolvedValue({ url: 'https://buy.stripe.com/test_abc' } as any);
+
+      // Act
+      const result = await service.createPaymentLink(7, 42);
+
+      // Assert — your turn. Was `paymentLinks.create` called with the
+      // right `line_items` (currency, unit_amount 2500, product name) and
+      // `metadata` (userId '7', productVariantId '5')? Does `result` match
+      // { paymentLink: 'https://buy.stripe.com/test_abc', expiresAt: null }?
+      expect(createLinkSpy).toHaveBeenCalledWith({
+        line_items: [
+          {
+            price_data: {
+              currency: 'usd',
+              unit_amount: 2500,
+              product_data: { name: 'summer-tshirt' },
+            },
+            quantity: 1,
+          },
+        ],
+        metadata: {
+          userId: '7',
+          productVariantId: '5',
+        },
+      });
+
+      expect(result).toEqual({
+        paymentLink: 'https://buy.stripe.com/test_abc',
+        expiresAt: null,
+      });
+    });
+    it('throws ConflictException when the product has more than one variant', async () => {
+      // Arrange
+      jest.spyOn(service, 'findOne').mockResolvedValue({
+        productId: 42,
+        name: 'summer-tshirt',
+      } as any);
+      jest.spyOn(prismaService.product_variants, 'findMany').mockResolvedValue([
+        { product_variant_id: 5, product_id: 42 },
+        { product_variant_id: 6, product_id: 42 },
+      ] as any);
+      const createLinkSpy = jest.spyOn(stripeService.paymentLinks, 'create');
+
+      // Act
+      const act = service.createPaymentLink(7, 42);
+
+      // Assert — your turn. Does it reject with ConflictException? Was
+      // `paymentLinks.create` never called?
+      expect(createLinkSpy).not.toHaveBeenCalled();
+      await expect(act).rejects.toThrow(ConflictException);
+    });
+
+    it('throws NotFoundException when the product does not exist', async () => {
+      // Arrange
+      jest.spyOn(service, 'findOne').mockRejectedValue(new NotFoundException());
+      const createLinkSpy = jest.spyOn(stripeService.paymentLinks, 'create');
+
+      // Act
+      const act = service.createPaymentLink(7, 999);
+
+      // Assert — your turn. Does it reject with NotFoundException? Was
+      // `paymentLinks.create` never called?
+      expect(createLinkSpy).not.toHaveBeenCalled();
       await expect(act).rejects.toThrow(NotFoundException);
     });
   });

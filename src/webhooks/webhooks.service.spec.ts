@@ -14,8 +14,8 @@ describe('WebhooksService', () => {
   // actually makes inside $transaction.
   const mockTx = {
     order_status_history: { create: jest.fn() },
-    orders: { update: jest.fn(), findUnique: jest.fn() },
-    product_variants: { update: jest.fn() },
+    orders: { update: jest.fn(), findUnique: jest.fn(), create: jest.fn() },
+    product_variants: { update: jest.fn(), findUnique: jest.fn() },
   };
 
   beforeEach(async () => {
@@ -143,6 +143,75 @@ describe('WebhooksService', () => {
     expect(clearCartSpy).not.toHaveBeenCalled();
     expect(updateEventSpy).toHaveBeenCalledWith({
       where: { stripe_event_id: 'evt_3' },
+      data: { status: 'processed', processed_at: expect.any(Date) },
+    });
+  });
+
+  it('creates a paid order and decrements stock on checkout.session.completed', async () => {
+    // Arrange
+    jest
+      .spyOn(prismaService.stripe_events, 'create')
+      .mockResolvedValue({} as any);
+    mockTx.product_variants.findUnique.mockResolvedValue({
+      product_variant_id: 5,
+      stock_quantity: 3,
+    } as any);
+    const clearCartSpy = jest.spyOn(cartsService, 'clearCart');
+    const updateEventSpy = jest.spyOn(prismaService.stripe_events, 'update');
+    const event = {
+      id: 'evt_4',
+      type: 'checkout.session.completed',
+      data: {
+        object: {
+          amount_total: 2500,
+          metadata: { userId: '7', productVariantId: '5' },
+        },
+      },
+    } as unknown as Stripe.Event;
+
+    // Act
+    await service.handleEvent(event);
+
+    // Assert — your turn. Was orders.create called with user_id 7,
+    // total_amount 2500, payment_method 'payment_link', and an
+    // order_items.create with product_variant_id 5? Was
+    // product_variants.update called with decrement: 1 for
+    // product_variant_id 5? Was clearCart NOT called (this flow never
+    // touched a cart)? Was stripe_events.update called with 'processed'?
+    expect(mockTx.orders.create).toHaveBeenCalledWith({
+      data: {
+        user_id: 7,
+        total_amount: 2500,
+        payment_method: 'payment_link',
+        order_items: {
+          create: {
+            product_variant_id: 5,
+            quantity: 1,
+            price_at_purchase: 2500,
+          },
+        },
+        order_status_history: {
+          create: {
+            status: 'paid',
+            created_at: expect.any(Date),
+          },
+        },
+      },
+    });
+
+    expect(mockTx.product_variants.update).toHaveBeenCalledWith({
+      where: { product_variant_id: 5 },
+      data: {
+        stock_quantity: {
+          decrement: 1,
+        },
+      },
+    });
+
+    expect(clearCartSpy).not.toHaveBeenCalled();
+
+    expect(updateEventSpy).toHaveBeenCalledWith({
+      where: { stripe_event_id: 'evt_4' },
       data: { status: 'processed', processed_at: expect.any(Date) },
     });
   });

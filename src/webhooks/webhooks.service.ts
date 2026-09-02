@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 import type Stripe from 'stripe';
 import { Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -37,7 +37,15 @@ export class WebhooksService {
     let paidOrderUserId: number | undefined;
 
     await this.prismaService.$transaction(async (prisma) => {
-      if (event.type === 'payment_intent.succeeded') {
+      if (
+        event.type === 'payment_intent.succeeded' &&
+        event.data.object.metadata.orderId
+      ) {
+        // A Payment Link checkout also creates its own PaymentIntent under
+        // the hood, which fires this same event type with no orderId in
+        // its metadata (that one's handled by checkout.session.completed
+        // below instead) - skip it here rather than fail on a lookup for
+        // an order that was never created by createPayment.
         const payment_intent = event.data.object;
         const orderId = parseInt(payment_intent.metadata.orderId);
 
@@ -70,6 +78,53 @@ export class WebhooksService {
         }
 
         paidOrderUserId = order.user_id;
+      }
+
+      if (event.type === 'checkout.session.completed') {
+        const session = event.data.object;
+        if (!session.metadata) {
+          throw new Error('checkout.session.completed missing metadata');
+        }
+
+        const userId = parseInt(session.metadata.userId);
+        const productVariantId = parseInt(session.metadata.productVariantId);
+        const totalAmount = Number(session.amount_total);
+
+        const variant = await prisma.product_variants.findUnique({
+          where: { product_variant_id: productVariantId },
+        });
+
+        if (!variant || variant.stock_quantity < 1) {
+          throw new ConflictException(
+            `Variant ${productVariantId} does not have enough stock`,
+          );
+        }
+
+        await prisma.orders.create({
+          data: {
+            user_id: userId,
+            total_amount: totalAmount,
+            payment_method: 'payment_link',
+            order_items: {
+              create: {
+                product_variant_id: productVariantId,
+                quantity: 1,
+                price_at_purchase: totalAmount,
+              },
+            },
+            order_status_history: {
+              create: {
+                status: 'paid',
+                created_at: new Date(),
+              },
+            },
+          },
+        });
+
+        await prisma.product_variants.update({
+          where: { product_variant_id: productVariantId },
+          data: { stock_quantity: { decrement: 1 } },
+        });
       }
     });
 

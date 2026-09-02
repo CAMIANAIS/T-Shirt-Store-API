@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { StripeService } from '../stripe/stripe.service';
 import { ProductInputDto } from './dto/createProduct.dto';
 import { productsModel } from '../../generated/prisma/models';
 import { ProductUpdateInputDto } from './dto/updateProduct.dto';
@@ -19,9 +20,17 @@ export type Product = {
   categoryId: number;
 };
 
+export type PaymentLinkResult = {
+  paymentLink: string;
+  expiresAt: null;
+};
+
 @Injectable()
 export class ProductsService {
-  constructor(private prismaService: PrismaService) {}
+  constructor(
+    private prismaService: PrismaService,
+    private stripeService: StripeService,
+  ) {}
   private toProduct(row: productsModel): Product {
     return {
       productId: row.product_id,
@@ -183,5 +192,45 @@ export class ProductsService {
       },
     });
     return;
+  }
+
+  async createPaymentLink(
+    userId: number,
+    productId: number,
+  ): Promise<PaymentLinkResult> {
+    const product = await this.findOne(productId);
+
+    const variants = await this.prismaService.product_variants.findMany({
+      where: { product_id: productId },
+    });
+
+    if (variants.length !== 1) {
+      throw new ConflictException(
+        'Product must have exactly one variant to create a payment link',
+      );
+    }
+
+    const latestPrice = await this.prismaService.prices_history.findFirst({
+      where: { product_variant_id: variants[0].product_variant_id },
+      orderBy: { effective_from: 'desc' },
+    });
+
+    const link = await this.stripeService.paymentLinks.create({
+      line_items: [
+        {
+          price_data: {
+            currency: 'usd',
+            unit_amount: Number(latestPrice?.price),
+            product_data: { name: product.name },
+          },
+          quantity: 1,
+        },
+      ],
+      metadata: {
+        userId: String(userId),
+        productVariantId: String(variants[0].product_variant_id),
+      },
+    });
+    return { paymentLink: link.url, expiresAt: null };
   }
 }
