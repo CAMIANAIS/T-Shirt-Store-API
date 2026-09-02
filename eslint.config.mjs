@@ -33,13 +33,15 @@ export default tseslint.config(
     },
   },
   {
-    files: ['**/*.spec.ts'],
+    files: ['**/*.spec.ts', '**/*.e2e-spec.ts'],
     rules: {
       // Jest mocks are referenced as bare values in `expect(...)` assertions,
       // which this rule otherwise flags as an unbound-`this` risk.
       '@typescript-eslint/unbound-method': 'off',
-      // expect.any(...) etc. are typed `any` by @types/jest.
+      // expect.any(...) etc. are typed `any` by @types/jest; Supertest's
+      // response.body is also untyped `any` in e2e specs.
       '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
     },
   },
 );
