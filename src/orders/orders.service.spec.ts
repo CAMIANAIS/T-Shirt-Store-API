@@ -38,9 +38,11 @@ describe('OrdersService', () => {
             orders: {
               create: jest.fn(),
               findUnique: jest.fn(),
+              findMany: jest.fn(),
             },
             order_status_history: {
               findFirst: jest.fn(),
+              findMany: jest.fn(),
             },
             product_variants: {
               findUnique: jest.fn(),
@@ -360,6 +362,140 @@ describe('OrdersService', () => {
       // `paymentIntents.create` never called?
       expect(intentSpy).not.toHaveBeenCalled();
       await expect(act).rejects.toThrow(ConflictException);
+    });
+  });
+
+  describe('getOrders', () => {
+    const orderRow = {
+      order_id: 1,
+      user_id: 7,
+      total_amount: BigInt(5000),
+      created_at: new Date('2026-01-01'),
+      updated_at: new Date('2026-01-01'),
+      order_items: [],
+    };
+
+    it('returns all orders without scoping to a user when called without a userId (manager view)', async () => {
+      // Arrange
+      jest
+        .spyOn(prismaService.order_status_history, 'findMany')
+        .mockResolvedValue([]);
+      const findManySpy = jest
+        .spyOn(prismaService.orders, 'findMany')
+        .mockResolvedValue([orderRow] as any);
+
+      // Act
+      const result = await service.getOrders({});
+
+      // Assert — your turn. Was `orders.findMany`'s `where` free of any
+      // `user_id` key at all? Does `result` have one mapped Order?
+      expect(findManySpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.not.objectContaining({ user_id: expect.anything() }),
+        }),
+      );
+      expect(result).toEqual([
+        {
+          id: 1,
+          userId: 7,
+          totalAmount: 5000,
+          items: [],
+          createdAt: new Date('2026-01-01'),
+          updatedAt: new Date('2026-01-01'),
+        },
+      ]);
+    });
+
+    it('scopes results to the given user when userId is provided (client view)', async () => {
+      // Arrange
+      jest
+        .spyOn(prismaService.order_status_history, 'findMany')
+        .mockResolvedValue([]);
+      const findManySpy = jest
+        .spyOn(prismaService.orders, 'findMany')
+        .mockResolvedValue([orderRow] as any);
+
+      // Act
+      const result = await service.getOrders({}, 7);
+
+      // Assert — your turn. Was `orders.findMany`'s `where` called with
+      // `user_id: 7`?
+      expect(findManySpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ user_id: 7 }),
+        }),
+      );
+      expect(result).toEqual([
+        {
+          id: 1,
+          userId: 7,
+          totalAmount: 5000,
+          items: [],
+          createdAt: new Date('2026-01-01'),
+          updatedAt: new Date('2026-01-01'),
+        },
+      ]);
+    });
+
+    it("filters by the order's current status, not any status it has ever had", async () => {
+      // Arrange — order 1's latest status is 'shipped', order 2's is
+      // 'pending'. Filtering by status: 'pending' should only match order 2,
+      // even though order 1 was 'pending' too, earlier in its history.
+      jest
+        .spyOn(prismaService.order_status_history, 'findMany')
+        .mockResolvedValue([
+          { order_id: 1, status: 'shipped' },
+          { order_id: 2, status: 'pending' },
+        ] as any);
+      const findManySpy = jest
+        .spyOn(prismaService.orders, 'findMany')
+        .mockResolvedValue([]);
+
+      // Act
+      await service.getOrders({ status: 'pending' });
+
+      // Assert — your turn. Was `orders.findMany`'s `where` called with
+      // `order_id: { in: [2] }` — not `[1, 2]`, and not `[1]`?
+      expect(findManySpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ order_id: { in: [2] } }),
+        }),
+      );
+    });
+
+    it('passes date range, price range, and pagination through to the query', async () => {
+      // Arrange
+      jest
+        .spyOn(prismaService.order_status_history, 'findMany')
+        .mockResolvedValue([]);
+      const findManySpy = jest
+        .spyOn(prismaService.orders, 'findMany')
+        .mockResolvedValue([]);
+
+      // Act
+      await service.getOrders({
+        fromDate: '2026-01-01',
+        toDate: '2026-01-31',
+        minAmount: 1000,
+        maxAmount: 9000,
+        limit: 10,
+        offset: 20,
+      });
+
+      // Assert — your turn. Was `orders.findMany` called with
+      // `created_at: { gte: '2026-01-01', lte: '2026-01-31' }`,
+      // `total_amount: { gte: 1000, lte: 9000 }`, `take: 10`, `skip: 20`?
+      expect(findManySpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            created_at: { gte: '2026-01-01', lte: '2026-01-31' },
+            total_amount: { gte: 1000, lte: 9000 },
+          }),
+
+          take: 10,
+          skip: 20,
+        }),
+      );
     });
   });
 });

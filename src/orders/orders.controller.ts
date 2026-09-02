@@ -1,10 +1,12 @@
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   HttpStatus,
   Param,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { OrdersService } from './orders.service';
@@ -15,6 +17,7 @@ import { PoliciesGuard } from '../casl/policies.guard';
 import { CheckPolicies } from '../casl/policies.decorator';
 import { AppAbility } from '../casl/casl-ability.factory';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { OrderParamsDto } from './dto/orderParams.dto';
 
 interface JwtPayload {
   sub: number;
@@ -43,6 +46,10 @@ export class OrdersController {
     return this.ordersService.createPayment(userId.sub, orderId, dto);
   }
 
-  // Next up: GET /orders, GET /orders/:orderId, GET /orders/:orderId/history,
-  // PATCH /orders/:orderId/status, POST /orders/:orderId/cancel.
+  @UseGuards(JWTAuthGuard, PoliciesGuard)
+  @CheckPolicies((ability: AppAbility) => ability.can('manage', 'Order'))
+  @Get()
+  getAllOrders(@Query() dto: OrderParamsDto) {
+    return this.ordersService.getOrders(dto);
+  }
 }

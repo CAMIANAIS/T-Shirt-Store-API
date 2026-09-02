@@ -11,6 +11,7 @@ import { StripeService } from '../stripe/stripe.service';
 import { CreateOrderDto } from './dto/createOrder.dto';
 import { PaymentIntentInputDto } from './dto/paymentIntentInput.dto';
 import { ordersGetPayload } from '../../generated/prisma/models';
+import { OrderParamsDto } from './dto/orderParams.dto';
 
 export type PaymentIntentResult = {
   intentId: string;
@@ -175,5 +176,39 @@ export class OrdersService {
       amount: intent.amount,
       currency: intent.currency,
     };
+  }
+  async getOrders(dto: OrderParamsDto, userId?: number): Promise<Order[]> {
+    const userFilter = userId ? { user_id: userId } : {};
+    const latestStatuses =
+      await this.prismaService.order_status_history.findMany({
+        orderBy: [{ order_id: 'asc' }, { created_at: 'desc' }],
+        distinct: ['order_id'],
+      });
+
+    const orderIds = dto.status
+      ? latestStatuses
+          .filter((row) => row.status === dto.status)
+          .map((row) => row.order_id)
+      : undefined;
+    const orders = await this.prismaService.orders.findMany({
+      where: {
+        ...(orderIds && { order_id: { in: orderIds } }),
+        created_at: {
+          gte: dto.fromDate,
+          lte: dto.toDate,
+        },
+
+        total_amount: {
+          gte: dto.minAmount,
+          lte: dto.maxAmount,
+        },
+        ...userFilter,
+      },
+      take: dto.limit,
+      skip: dto.offset,
+      include: { order_items: true },
+      orderBy: { created_at: 'desc' },
+    });
+    return orders.map((order) => this.toOrder(order));
   }
 }
