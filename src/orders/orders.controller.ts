@@ -66,11 +66,18 @@ export class OrdersController {
   @CheckPolicies((ability: AppAbility) => ability.can('read', 'Order'))
   @Get(':orderId/status-history')
   getStatusHistory(
+    @CurrentUser() user: JwtUser,
     @Param('orderId') orderId: number,
     @Query('limit') limit: number,
     @Query('offset') offset: number,
   ) {
-    return this.ordersService.getStatusHistory(orderId, limit, offset);
+    return this.ordersService.getStatusHistory(
+      orderId,
+      user.sub,
+      user.role === 'manager',
+      limit,
+      offset,
+    );
   }
   @UseGuards(JWTAuthGuard, PoliciesGuard)
   @CheckPolicies((ability: AppAbility) => ability.can('advanceStatus', 'Order'))

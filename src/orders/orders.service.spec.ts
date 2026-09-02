@@ -570,6 +570,10 @@ describe('OrdersService', () => {
   describe('getStatusHistory', () => {
     it('maps status history rows to the response DTO shape', async () => {
       // Arrange
+      jest.spyOn(prismaService.orders, 'findFirst').mockResolvedValue({
+        ...orderRow,
+        order_items: [],
+      } as any);
       jest
         .spyOn(prismaService.order_status_history, 'findMany')
         .mockResolvedValue([
@@ -585,7 +589,7 @@ describe('OrdersService', () => {
         ]);
 
       // Act
-      const result = await service.getStatusHistory(1, 20, 0);
+      const result = await service.getStatusHistory(1, 7, false, 20, 0);
 
       // Assert — your turn. Does `result` have one entry with
       // `status: 'paid'`, `changedAt` matching the row's `created_at`,
@@ -599,6 +603,44 @@ describe('OrdersService', () => {
           changedBy: 'system',
         }),
       );
+    });
+
+    it('throws NotFoundException when the order does not exist', async () => {
+      // Arrange
+      jest.spyOn(prismaService.orders, 'findFirst').mockResolvedValue(null);
+      const findManySpy = jest.spyOn(
+        prismaService.order_status_history,
+        'findMany',
+      );
+
+      // Act
+      const act = service.getStatusHistory(999, 7, false, 20, 0);
+
+      // Assert — your turn. Does it reject with NotFoundException? Was
+      // `order_status_history.findMany` never called?
+      await expect(act).rejects.toThrow(NotFoundException);
+      expect(findManySpy).not.toHaveBeenCalled();
+    });
+
+    it('throws ForbiddenException when the order belongs to another user', async () => {
+      // Arrange
+      jest.spyOn(prismaService.orders, 'findFirst').mockResolvedValue({
+        ...orderRow,
+        user_id: 999,
+        order_items: [],
+      } as any);
+      const findManySpy = jest.spyOn(
+        prismaService.order_status_history,
+        'findMany',
+      );
+
+      // Act
+      const act = service.getStatusHistory(1, 7, false, 20, 0);
+
+      // Assert — your turn. Does it reject with ForbiddenException? Was
+      // `order_status_history.findMany` never called?
+      await expect(act).rejects.toThrow(ForbiddenException);
+      expect(findManySpy).not.toHaveBeenCalled();
     });
   });
 

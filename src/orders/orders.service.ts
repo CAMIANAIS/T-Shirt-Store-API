@@ -247,9 +247,21 @@ export class OrdersService {
 
   async getStatusHistory(
     orderId: number,
+    userId: number,
+    isManager: boolean,
     limit?: number,
     offset?: number,
   ): Promise<OrderStatusHistoryDto[]> {
+    const order = await this.prismaService.orders.findFirst({
+      where: { order_id: orderId },
+    });
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+    if (!isManager && order.user_id !== userId) {
+      throw new ForbiddenException('You are not allowed');
+    }
+
     const statusHistory =
       await this.prismaService.order_status_history.findMany({
         where: { order_id: orderId },
