@@ -42,7 +42,7 @@ export class CaslAbilityFactory {
     const { can, build } = new AbilityBuilder<AppAbility>(createMongoAbility);
     if (user.role === 'manager') {
       can('manage', 'Product');
-      can('read', 'Order');
+      can('manage', 'Order');
       can('advanceStatus', 'Order', ['status']);
     }
     if (user.role === 'client') {
