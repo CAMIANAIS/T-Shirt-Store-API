@@ -7,7 +7,7 @@ export async function createTestApp(): Promise<INestApplication> {
     imports: [AppModule],
   }).compile();
 
-  const app = moduleFixture.createNestApplication();
+  const app = moduleFixture.createNestApplication({ rawBody: true });
 
   // Must match main.ts's global pipe exactly — this is the step the
   // guidelines call out as easy to forget, and it's why a request that

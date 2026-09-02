@@ -77,6 +77,18 @@ export class WebhooksService {
           });
         }
 
+        await prisma.payments.create({
+          data: {
+            order_id: orderId,
+            amount: order.total_amount,
+            // No frontend exists to offer any method besides card — same
+            // reasoning as createPayment's allow_redirects: 'never'.
+            method_type: 'card',
+            stripe_reference: payment_intent.id,
+            status: 'completed',
+          },
+        });
+
         paidOrderUserId = order.user_id;
       }
 

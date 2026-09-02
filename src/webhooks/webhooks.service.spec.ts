@@ -16,6 +16,7 @@ describe('WebhooksService', () => {
     order_status_history: { create: jest.fn() },
     orders: { update: jest.fn(), findUnique: jest.fn(), create: jest.fn() },
     product_variants: { update: jest.fn(), findUnique: jest.fn() },
+    payments: { create: jest.fn() },
   };
 
   beforeEach(async () => {

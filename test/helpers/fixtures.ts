@@ -73,5 +73,6 @@ export async function createProductFixture(
     productVariantId: product.product_variants[0].product_variant_id,
     skuCode: product.product_variants[0].sku_code,
     stockQuantity: product.product_variants[0].stock_quantity,
+    price: overrides?.price ?? 1999,
   };
 }
