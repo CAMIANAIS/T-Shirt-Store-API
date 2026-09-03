@@ -1,11 +1,18 @@
 import { Controller, Get, Query, Res } from '@nestjs/common';
+import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { CategoriesService, Category } from './categories.service';
+import { CategoryDto } from './dto/category.dto';
 
+@ApiTags('categories')
 @Controller('categories')
 export class CategoriesController {
   constructor(private readonly categoriesService: CategoriesService) {}
 
+  @ApiOperation({ summary: 'List categories' })
+  @ApiQuery({ name: 'limit', required: false, example: 20 })
+  @ApiQuery({ name: 'offset', required: false, example: 0 })
+  @ApiResponse({ status: 200, type: [CategoryDto] })
   @Get()
   async findAll(
     @Query('limit') limit: number,

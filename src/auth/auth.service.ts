@@ -157,15 +157,6 @@ export class AuthService {
     }
   }
 
-  //   Hash provided token
-  // Query: SELECT * FROM Auth_Tokens WHERE token_hash=? AND type='reset' AND revoked=false AND expires_at > NOW()
-  // If no row found → reject (invalid/expired/already-revoked)
-  // Verify user still exists (foreign key should enforce this, but check anyway)
-  // Hash new password
-  // Update Users set password_hash=? where user_id=?
-  // Set revoked=true on the reset token (prevent reuse of same token)
-  // Optionally: revoke all other type='reset' tokens for this user (cleanup stale resets)
-  // Return success
   async resetPassword(token: string, newPassword: string): Promise<void> {
     const tokenHash = this.hashtoken(token);
 
