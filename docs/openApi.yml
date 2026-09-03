@@ -60,31 +60,31 @@ components:
           example: 10
         name:
           type: string
-          example: "summer-tshirt"
+          example: 'summer-tshirt'
         description:
           type: string
-          example: "long sleeves, 100% cotton"
+          example: 'long sleeves, 100% cotton'
         status:
           type: string
           enum:
             - active
             - inactive
             - discontinued
-          example: "active"
+          example: 'active'
         category:
-          $ref: "#/components/schemas/Category"
+          $ref: '#/components/schemas/Category'
         createdAt:
           type: string
           format: date-time
-          example: "1985-04-12T23:20:50.52Z"
+          example: '1985-04-12T23:20:50.52Z'
         updatedAt:
           type: string
           format: date-time
-          example: "1985-04-12T23:20:50.52Z"
+          example: '1985-04-12T23:20:50.52Z'
         deletedAt:
           type: string
           format: date-time
-          example: "1985-04-12T23:20:50.52Z"
+          example: '1985-04-12T23:20:50.52Z'
     Category:
       required:
         - name
@@ -96,20 +96,20 @@ components:
           example: 1
         name:
           type: string
-          example: "tshirts"
+          example: 'tshirts'
 
         createdAt:
           type: string
           format: date-time
-          example: "1985-04-12T23:20:50.52Z"
+          example: '1985-04-12T23:20:50.52Z'
         updatedAt:
           type: string
           format: date-time
-          example: "1985-04-12T23:20:50.52Z"
+          example: '1985-04-12T23:20:50.52Z'
         deletedAt:
           type: string
           format: date-time
-          example: "1985-04-12T23:20:50.52Z"
+          example: '1985-04-12T23:20:50.52Z'
     ProductVariant:
       required:
         - size
@@ -125,15 +125,15 @@ components:
         size:
           type: string
           enum:
-            - "S"
-            - "M"
-            - "L"
-            - "XL"
-            - "XXL"
-          example: "S"
+            - 'S'
+            - 'M'
+            - 'L'
+            - 'XL'
+            - 'XXL'
+          example: 'S'
         color:
           type: string
-          example: "red"
+          example: 'red'
         stockQuantity:
           type: integer
           format: int64
@@ -141,8 +141,8 @@ components:
 
         skuCode:
           type: string
-          pattern: "^[a-zA-Z0-9]+$"
-          example: "TSH-BLU-MD"
+          pattern: '^[a-zA-Z0-9]+$'
+          example: 'TSH-BLU-MD'
         status:
           type: string
           enum:
@@ -152,13 +152,13 @@ components:
         createdAt:
           type: string
           format: date-time
-          example: "1985-04-12T23:20:50.52Z"
+          example: '1985-04-12T23:20:50.52Z'
         updatedAt:
           type: string
           format: date-time
-          example: "1985-04-12T23:20:50.52Z"
+          example: '1985-04-12T23:20:50.52Z'
         product:
-          $ref: "#/components/schemas/Product"
+          $ref: '#/components/schemas/Product'
     ProductVariantInput:
       required:
         - size
@@ -170,15 +170,15 @@ components:
         size:
           type: string
           enum:
-            - "S"
-            - "M"
-            - "L"
-            - "XL"
-            - "XXL"
-          example: "S"
+            - 'S'
+            - 'M'
+            - 'L'
+            - 'XL'
+            - 'XXL'
+          example: 'S'
         color:
           type: string
-          example: "red"
+          example: 'red'
         stockQuantity:
           type: integer
           format: int64
@@ -186,8 +186,8 @@ components:
 
         skuCode:
           type: string
-          pattern: "^[a-zA-Z0-9]+$"
-          example: "TSH-BLU-MD"
+          pattern: '^[a-zA-Z0-9]+$'
+          example: 'TSH-BLU-MD'
         status:
           type: string
           enum:
@@ -200,15 +200,15 @@ components:
         size:
           type: string
           enum:
-            - "S"
-            - "M"
-            - "L"
-            - "XL"
-            - "XXL"
-          example: "S"
+            - 'S'
+            - 'M'
+            - 'L'
+            - 'XL'
+            - 'XXL'
+          example: 'S'
         color:
           type: string
-          example: "red"
+          example: 'red'
         stockQuantity:
           type: integer
           format: int64
@@ -216,8 +216,8 @@ components:
 
         skuCode:
           type: string
-          pattern: "^[a-zA-Z0-9]+$"
-          example: "TSH-BLU-MD"
+          pattern: '^[a-zA-Z0-9]+$'
+          example: 'TSH-BLU-MD'
         status:
           type: string
           enum:
@@ -238,35 +238,35 @@ components:
           example: 1
         bucketName:
           type: string
-          example: "bucketNameHere"
+          example: 'bucketNameHere'
         filename:
           type: string
-          example: "fileNameHere"
+          example: 'fileNameHere'
         extension:
           type: string
           enum:
-            - "jpg"
-            - "png"
-            - "webp"
-            - "gif"
-          example: "jpg"
+            - 'jpg'
+            - 'png'
+            - 'webp'
+            - 'gif'
+          example: 'jpg'
         displayOrder:
           type: integer
           format: int64
           example: 1
         altText:
           type: string
-          example: "Product front view"
+          example: 'Product front view'
         createdAt:
           type: string
           format: date-time
-          example: "1985-04-12T23:20:50.52Z"
+          example: '1985-04-12T23:20:50.52Z'
         updatedAt:
           type: string
           format: date-time
-          example: "1985-04-12T23:20:50.52Z"
+          example: '1985-04-12T23:20:50.52Z'
         product:
-          $ref: "#/components/schemas/Product"
+          $ref: '#/components/schemas/Product'
     ProductImageInput:
       required:
         - file
@@ -275,14 +275,14 @@ components:
         file:
           type: string
           format: binary
-          description: "Raw image file bytes. Supported formats: jpg, png, webp, gif"
+          description: 'Raw image file bytes. Supported formats: jpg, png, webp, gif'
         displayOrder:
           type: integer
           format: int64
           example: 1
         altText:
           type: string
-          example: "Product front view"
+          example: 'Product front view'
     ProductInput:
       required:
         - name
@@ -292,17 +292,17 @@ components:
       properties:
         name:
           type: string
-          example: "summer-tshirt"
+          example: 'summer-tshirt'
         description:
           type: string
-          example: "long sleeves, 100% cotton"
+          example: 'long sleeves, 100% cotton'
         status:
           type: string
           enum:
             - active
             - inactive
             - discontinued
-          example: "active"
+          example: 'active'
         categoryId:
           type: integer
           description: Set a category for this product
@@ -311,23 +311,23 @@ components:
           type: array
           description: Optional variants to create alongside the product in one call
           items:
-            $ref: "#/components/schemas/ProductVariantInput"
+            $ref: '#/components/schemas/ProductVariantInput'
     ProductUpdateInput:
       type: object
       properties:
         name:
           type: string
-          example: "summer-tshirt"
+          example: 'summer-tshirt'
         description:
           type: string
-          example: "long sleeves, 100% cotton"
+          example: 'long sleeves, 100% cotton'
         status:
           type: string
           enum:
             - active
             - inactive
             - discontinued
-          example: "active"
+          example: 'active'
         categoryId:
           type: integer
           description: Set a category for this product
@@ -379,15 +379,15 @@ components:
           example: 1
         items:
           type: array
-          items: { "$ref": "#/components/schemas/LineItem" }
+          items: { '$ref': '#/components/schemas/LineItem' }
         createdAt:
           type: string
           format: date-time
-          example: "1985-04-12T23:20:50.52Z"
+          example: '1985-04-12T23:20:50.52Z'
         updatedAt:
           type: string
           format: date-time
-          example: "1985-04-12T23:20:50.52Z"
+          example: '1985-04-12T23:20:50.52Z'
         userId:
           type: integer
     Order:
@@ -405,7 +405,7 @@ components:
           example: 1
         items:
           type: array
-          items: { "$ref": "#/components/schemas/LineItem" }
+          items: { '$ref': '#/components/schemas/LineItem' }
         totalAmount:
           type: integer
           format: int64
@@ -421,19 +421,19 @@ components:
             - shipped
             - cancelled
             - delivered
-          example: "pending"
+          example: 'pending'
         paymentMethod:
           type: string
           enum: [payment_link, payment_intent]
-          example: "payment_intent"
+          example: 'payment_intent'
         createdAt:
           type: string
           format: date-time
-          example: "1985-04-12T23:20:50.52Z"
+          example: '1985-04-12T23:20:50.52Z'
         updatedAt:
           type: string
           format: date-time
-          example: "1985-04-12T23:20:50.52Z"
+          example: '1985-04-12T23:20:50.52Z'
         userId:
           type: integer
     CartItemsInput:
@@ -460,7 +460,7 @@ components:
       type: object
       properties:
         shippingAddress:
-          $ref: "#/components/schemas/OrderAddressInput"
+          $ref: '#/components/schemas/OrderAddressInput'
     OrderAddressInput:
       required:
         - street1
@@ -473,24 +473,24 @@ components:
       properties:
         street1:
           type: string
-          example: "123 Main St"
+          example: '123 Main St'
         street2:
           type: string
-          example: "Apt 4B"
+          example: 'Apt 4B'
         street3:
           type: string
         city:
           type: string
-          example: "New York"
+          example: 'New York'
         postalCode:
           type: string
-          example: "10001"
+          example: '10001'
         state:
           type: string
-          example: "NY"
+          example: 'NY'
         country:
           type: string
-          example: "USA"
+          example: 'USA'
     PaymentIntentInput:
       required:
         - paymentMethod
@@ -499,7 +499,7 @@ components:
         paymentMethod:
           type: string
           enum: [card, bank_account, apple_pay, google_pay]
-          example: "card"
+          example: 'card'
     OrderStatusInput:
       required:
         - status
@@ -514,7 +514,7 @@ components:
             - shipped
             - cancelled
             - delivered
-          example: "processing"
+          example: 'processing'
     OrderStatusHistory:
       required:
         - status
@@ -531,20 +531,20 @@ components:
             - shipped
             - cancelled
             - delivered
-          example: "processing"
+          example: 'processing'
         changedAt:
           type: string
           format: date-time
-          example: "1985-04-12T23:20:50.52Z"
+          example: '1985-04-12T23:20:50.52Z'
         changedBy:
           oneOf:
-            - $ref: "#/components/schemas/ChangedByUser"
-            - $ref: "#/components/schemas/ChangedBySystem"
+            - $ref: '#/components/schemas/ChangedByUser'
+            - $ref: '#/components/schemas/ChangedBySystem'
           discriminator:
             propertyName: type
             mapping:
-              user: "#/components/schemas/ChangedByUser"
-              system: "#/components/schemas/ChangedBySystem"
+              user: '#/components/schemas/ChangedByUser'
+              system: '#/components/schemas/ChangedBySystem'
     User:
       required:
         - id
@@ -560,34 +560,34 @@ components:
         email:
           type: string
           format: email
-          example: "jhon@example.com"
+          example: 'jhon@example.com'
         username:
           type: string
-          example: "jhon"
+          example: 'jhon'
         role:
           type: string
           enum: [manager, client]
         createdAt:
           type: string
           format: date-time
-          example: "1985-04-12T23:20:50.52Z"
+          example: '1985-04-12T23:20:50.52Z'
         updatedAt:
           type: string
           format: date-time
-          example: "1985-04-12T23:20:50.52Z"
+          example: '1985-04-12T23:20:50.52Z'
         deletedAt:
           type: string
           format: date-time
-          example: "1985-04-12T23:20:50.52Z"
+          example: '1985-04-12T23:20:50.52Z'
     SignupResponse:
       allOf:
-        - $ref: "#/components/schemas/User"
+        - $ref: '#/components/schemas/User'
         - type: object
           properties:
             birthdate:
               type: string
               format: date
-              example: "1998-04-12"
+              example: '1998-04-12'
     AuthResponse:
       required:
         - user
@@ -595,7 +595,7 @@ components:
       type: object
       properties:
         user:
-          $ref: "#/components/schemas/User"
+          $ref: '#/components/schemas/User'
         token:
           type: string
           description: JWT bearer token for subsequent requests
@@ -608,18 +608,18 @@ components:
       properties:
         username:
           type: string
-          example: "jhon"
+          example: 'jhon'
         email:
           type: string
           format: email
-          example: "jhon@example.com"
+          example: 'jhon@example.com'
         password:
           type: string
           format: password
         birthdate:
           type: string
           format: date
-          example: "1998-04-12"
+          example: '1998-04-12'
     Error:
       type: object
       properties:
@@ -628,10 +628,10 @@ components:
           example: 404
         message:
           type: string
-          example: "Product not found"
+          example: 'Product not found'
         error:
           type: string
-          example: "Not Found"
+          example: 'Not Found'
     ChangedByUser:
       type: object
       required:
@@ -678,33 +678,33 @@ paths:
             format: int64
       security: []
       responses:
-        "200":
+        '200':
           description: Product successfully returned
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Product"
+                $ref: '#/components/schemas/Product'
             application/xml:
               schema:
-                $ref: "#/components/schemas/Product"
-        "400":
+                $ref: '#/components/schemas/Product'
+        '400':
           description: Invalid productId
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "404":
+                $ref: '#/components/schemas/Error'
+        '404':
           description: Product not found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "default":
+                $ref: '#/components/schemas/Error'
+        'default':
           description: Unexpected error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
+                $ref: '#/components/schemas/Error'
     patch:
       tags:
         - product
@@ -724,57 +724,57 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/ProductUpdateInput"
+              $ref: '#/components/schemas/ProductUpdateInput'
           application/xml:
             schema:
-              $ref: "#/components/schemas/ProductUpdateInput"
+              $ref: '#/components/schemas/ProductUpdateInput'
         required: true
       responses:
-        "200":
+        '200':
           description: Product updated successfully
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Product"
+                $ref: '#/components/schemas/Product'
             application/xml:
               schema:
-                $ref: "#/components/schemas/Product"
-        "400":
+                $ref: '#/components/schemas/Product'
+        '400':
           description: Invalid productId
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "401":
+                $ref: '#/components/schemas/Error'
+        '401':
           description: Authentication credentials invalid or missing
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "403":
+                $ref: '#/components/schemas/Error'
+        '403':
           description: Insufficient permissions
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "404":
+                $ref: '#/components/schemas/Error'
+        '404':
           description: Product not found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "422":
+                $ref: '#/components/schemas/Error'
+        '422':
           description: Validation exception
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "default":
+                $ref: '#/components/schemas/Error'
+        'default':
           description: Unexpected error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
+                $ref: '#/components/schemas/Error'
     delete:
       tags:
         - product
@@ -790,38 +790,38 @@ paths:
             type: integer
             format: int64
       responses:
-        "204":
+        '204':
           description: Item removed successfully
-        "400":
+        '400':
           description: Invalid productId
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "401":
+                $ref: '#/components/schemas/Error'
+        '401':
           description: Authentication credentials invalid or missing
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "403":
+                $ref: '#/components/schemas/Error'
+        '403':
           description: Insufficient permissions
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "404":
+                $ref: '#/components/schemas/Error'
+        '404':
           description: Product not found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "default":
+                $ref: '#/components/schemas/Error'
+        'default':
           description: Unexpected error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
+                $ref: '#/components/schemas/Error'
 
   /categories:
     get:
@@ -850,7 +850,7 @@ paths:
             example: 0
       security: []
       responses:
-        "200":
+        '200':
           description: Categories successfully returned
           headers:
             X-TotalCount:
@@ -862,24 +862,24 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/Category"
+                  $ref: '#/components/schemas/Category'
             application/xml:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/Category"
-        "400":
+                  $ref: '#/components/schemas/Category'
+        '400':
           description: Invalid pagination parameters
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "default":
+                $ref: '#/components/schemas/Error'
+        'default':
           description: Unexpected error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
+                $ref: '#/components/schemas/Error'
 
   /products:
     get:
@@ -915,7 +915,7 @@ paths:
             example: 1
       security: []
       responses:
-        "200":
+        '200':
           description: Products successfully returned
           headers:
             X-TotalCount:
@@ -926,27 +926,27 @@ paths:
             application/json:
               schema:
                 {
-                  "type": "array",
-                  "items": { "$ref": "#/components/schemas/Product" },
+                  'type': 'array',
+                  'items': { '$ref': '#/components/schemas/Product' },
                 }
             application/xml:
               schema:
                 {
-                  "type": "array",
-                  "items": { "$ref": "#/components/schemas/Product" },
+                  'type': 'array',
+                  'items': { '$ref': '#/components/schemas/Product' },
                 }
-        "400":
+        '400':
           description: Invalid category or pagination parameters
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "default":
+                $ref: '#/components/schemas/Error'
+        'default':
           description: Unexpected error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
+                $ref: '#/components/schemas/Error'
 
     post:
       tags:
@@ -959,51 +959,51 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/ProductInput"
+              $ref: '#/components/schemas/ProductInput'
           application/xml:
             schema:
-              $ref: "#/components/schemas/ProductInput"
+              $ref: '#/components/schemas/ProductInput'
         required: true
       responses:
-        "201":
+        '201':
           description: Product created successfully
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Product"
+                $ref: '#/components/schemas/Product'
             application/xml:
               schema:
-                $ref: "#/components/schemas/Product"
-        "400":
+                $ref: '#/components/schemas/Product'
+        '400':
           description: Invalid input
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "401":
+                $ref: '#/components/schemas/Error'
+        '401':
           description: Authentication credentials invalid or missing
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "403":
+                $ref: '#/components/schemas/Error'
+        '403':
           description: Insufficient permissions
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "422":
+                $ref: '#/components/schemas/Error'
+        '422':
           description: Validation exception
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "default":
+                $ref: '#/components/schemas/Error'
+        'default':
           description: Unexpected error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
+                $ref: '#/components/schemas/Error'
 
   /products/{productId}/variants:
     get:
@@ -1039,7 +1039,7 @@ paths:
             example: 1
       security: []
       responses:
-        "200":
+        '200':
           description: ProductVariants successfully returned
           headers:
             X-TotalCount:
@@ -1051,30 +1051,30 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/ProductVariant"
+                  $ref: '#/components/schemas/ProductVariant'
             application/xml:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/ProductVariant"
-        "400":
+                  $ref: '#/components/schemas/ProductVariant'
+        '400':
           description: Invalid productId
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "404":
+                $ref: '#/components/schemas/Error'
+        '404':
           description: Product not found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "default":
+                $ref: '#/components/schemas/Error'
+        'default':
           description: Unexpected error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
+                $ref: '#/components/schemas/Error'
     post:
       tags:
         - productVariant
@@ -1094,63 +1094,63 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/ProductVariantInput"
+              $ref: '#/components/schemas/ProductVariantInput'
           application/xml:
             schema:
-              $ref: "#/components/schemas/ProductVariantInput"
+              $ref: '#/components/schemas/ProductVariantInput'
         required: true
       responses:
-        "201":
+        '201':
           description: ProductVariant created successfully
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ProductVariant"
+                $ref: '#/components/schemas/ProductVariant'
             application/xml:
               schema:
-                $ref: "#/components/schemas/ProductVariant"
-        "400":
+                $ref: '#/components/schemas/ProductVariant'
+        '400':
           description: Invalid productId
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "401":
+                $ref: '#/components/schemas/Error'
+        '401':
           description: Authentication credentials invalid or missing
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "403":
+                $ref: '#/components/schemas/Error'
+        '403':
           description: Insufficient permissions
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "404":
+                $ref: '#/components/schemas/Error'
+        '404':
           description: Product not found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "409":
+                $ref: '#/components/schemas/Error'
+        '409':
           description: SKU already exists
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "422":
+                $ref: '#/components/schemas/Error'
+        '422':
           description: Validation exception
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "default":
+                $ref: '#/components/schemas/Error'
+        'default':
           description: Unexpected error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
+                $ref: '#/components/schemas/Error'
 
   /products/{productId}/variants/{productVariantId}:
     patch:
@@ -1179,57 +1179,57 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/ProductVariantUpdateInput"
+              $ref: '#/components/schemas/ProductVariantUpdateInput'
           application/xml:
             schema:
-              $ref: "#/components/schemas/ProductVariantUpdateInput"
+              $ref: '#/components/schemas/ProductVariantUpdateInput'
         required: true
       responses:
-        "200":
+        '200':
           description: ProductVariant successfully updated
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ProductVariant"
+                $ref: '#/components/schemas/ProductVariant'
             application/xml:
               schema:
-                $ref: "#/components/schemas/ProductVariant"
-        "400":
+                $ref: '#/components/schemas/ProductVariant'
+        '400':
           description: Invalid productId or productVariantId
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "401":
+                $ref: '#/components/schemas/Error'
+        '401':
           description: Authentication credentials invalid or missing
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "403":
+                $ref: '#/components/schemas/Error'
+        '403':
           description: Insufficient permissions
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "404":
+                $ref: '#/components/schemas/Error'
+        '404':
           description: ProductVariant not found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "422":
+                $ref: '#/components/schemas/Error'
+        '422':
           description: Validation exception
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "default":
+                $ref: '#/components/schemas/Error'
+        'default':
           description: Unexpected error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
+                $ref: '#/components/schemas/Error'
 
   /products/{productId}/images:
     get:
@@ -1265,7 +1265,7 @@ paths:
             example: 1
       security: []
       responses:
-        "200":
+        '200':
           description: ProductImages successfully returned
           headers:
             X-TotalCount:
@@ -1277,30 +1277,30 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/ProductImage"
+                  $ref: '#/components/schemas/ProductImage'
             application/xml:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/ProductImage"
-        "400":
+                  $ref: '#/components/schemas/ProductImage'
+        '400':
           description: Invalid productId
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "404":
+                $ref: '#/components/schemas/Error'
+        '404':
           description: Product not found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "default":
+                $ref: '#/components/schemas/Error'
+        'default':
           description: Unexpected error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
+                $ref: '#/components/schemas/Error'
     post:
       tags:
         - product
@@ -1320,51 +1320,51 @@ paths:
         content:
           multipart/form-data:
             schema:
-              $ref: "#/components/schemas/ProductImageInput"
+              $ref: '#/components/schemas/ProductImageInput'
         required: true
       responses:
-        "201":
+        '201':
           description: ProductImage created successfully
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ProductImage"
-        "400":
+                $ref: '#/components/schemas/ProductImage'
+        '400':
           description: Missing file
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "401":
+                $ref: '#/components/schemas/Error'
+        '401':
           description: Authentication credentials invalid or missing
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "403":
+                $ref: '#/components/schemas/Error'
+        '403':
           description: Insufficient permissions
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "404":
+                $ref: '#/components/schemas/Error'
+        '404':
           description: Product not found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "422":
+                $ref: '#/components/schemas/Error'
+        '422':
           description: Validation exception
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "default":
+                $ref: '#/components/schemas/Error'
+        'default':
           description: Unexpected error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
+                $ref: '#/components/schemas/Error'
 
   /products/{productId}/activate:
     post:
@@ -1384,48 +1384,48 @@ paths:
             type: integer
             format: int64
       responses:
-        "200":
+        '200':
           description: Product activated successfully (or already active)
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Product"
-        "400":
+                $ref: '#/components/schemas/Product'
+        '400':
           description: Invalid productId
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "401":
+                $ref: '#/components/schemas/Error'
+        '401':
           description: Authentication credentials invalid or missing
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "403":
+                $ref: '#/components/schemas/Error'
+        '403':
           description: Insufficient permissions
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "404":
+                $ref: '#/components/schemas/Error'
+        '404':
           description: Product not found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "409":
+                $ref: '#/components/schemas/Error'
+        '409':
           description: Cannot activate a discontinued product
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "default":
+                $ref: '#/components/schemas/Error'
+        'default':
           description: Unexpected error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
+                $ref: '#/components/schemas/Error'
 
   /products/{productId}/deactivate:
     post:
@@ -1445,48 +1445,48 @@ paths:
             type: integer
             format: int64
       responses:
-        "200":
+        '200':
           description: Product deactivated successfully (or already inactive)
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Product"
-        "400":
+                $ref: '#/components/schemas/Product'
+        '400':
           description: Invalid productId
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "401":
+                $ref: '#/components/schemas/Error'
+        '401':
           description: Authentication credentials invalid or missing
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "403":
+                $ref: '#/components/schemas/Error'
+        '403':
           description: Insufficient permissions
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "404":
+                $ref: '#/components/schemas/Error'
+        '404':
           description: Product not found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "409":
+                $ref: '#/components/schemas/Error'
+        '409':
           description: Cannot deactivate a discontinued product
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "default":
+                $ref: '#/components/schemas/Error'
+        'default':
           description: Unexpected error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
+                $ref: '#/components/schemas/Error'
 
   /products/{productId}/likes:
     post:
@@ -1508,26 +1508,26 @@ paths:
             format: int64
           example: 42
       responses:
-        "204":
+        '204':
           description: Product liked successfully (or already liked by this user)
-        "401":
+        '401':
           description: Authentication credentials invalid or missing
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "404":
+                $ref: '#/components/schemas/Error'
+        '404':
           description: Product not found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "default":
+                $ref: '#/components/schemas/Error'
+        'default':
           description: Unexpected error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
+                $ref: '#/components/schemas/Error'
     delete:
       tags:
         - product
@@ -1547,26 +1547,26 @@ paths:
             format: int64
           example: 42
       responses:
-        "204":
+        '204':
           description: Product unliked successfully (or was not liked by this user)
-        "401":
+        '401':
           description: Authentication credentials invalid or missing
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "404":
+                $ref: '#/components/schemas/Error'
+        '404':
           description: Product not found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "default":
+                $ref: '#/components/schemas/Error'
+        'default':
           description: Unexpected error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
+                $ref: '#/components/schemas/Error'
 
   /products/{productId}/paymentLink:
     post:
@@ -1583,7 +1583,7 @@ paths:
             type: integer
             format: int64
       responses:
-        "201":
+        '201':
           description: paymentLink created successfully
           content:
             application/json:
@@ -1592,28 +1592,28 @@ paths:
                 properties:
                   paymentLink:
                     type: string
-                    example: "https://buy.stripe.com/test_..."
+                    example: 'https://buy.stripe.com/test_...'
                   expiresAt:
                     type: string
                     format: date-time
-        "401":
+        '401':
           description: Authentication credentials invalid or missing
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "404":
+                $ref: '#/components/schemas/Error'
+        '404':
           description: Product not found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "default":
+                $ref: '#/components/schemas/Error'
+        'default':
           description: Unexpected error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
+                $ref: '#/components/schemas/Error'
 
   /carts:
     get:
@@ -1623,39 +1623,39 @@ paths:
       description: Returns the cart for the authenticated user
       operationId: getCart
       responses:
-        "200":
+        '200':
           description: Cart successfully returned
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Cart"
+                $ref: '#/components/schemas/Cart'
             application/xml:
               schema:
-                $ref: "#/components/schemas/Cart"
-        "401":
+                $ref: '#/components/schemas/Cart'
+        '401':
           description: Authentication credentials invalid or missing
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "403":
+                $ref: '#/components/schemas/Error'
+        '403':
           description: Insufficient permissions
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "404":
+                $ref: '#/components/schemas/Error'
+        '404':
           description: Cart not found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "default":
+                $ref: '#/components/schemas/Error'
+        'default':
           description: Unexpected error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
+                $ref: '#/components/schemas/Error'
 
     delete:
       tags:
@@ -1664,32 +1664,32 @@ paths:
       description: Deletes all items from the authenticated user's cart
       operationId: clearCart
       responses:
-        "204":
+        '204':
           description: Cart cleared successfully
-        "401":
+        '401':
           description: Authentication credentials invalid or missing
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "403":
+                $ref: '#/components/schemas/Error'
+        '403':
           description: Insufficient permissions
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "404":
+                $ref: '#/components/schemas/Error'
+        '404':
           description: Cart not found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "default":
+                $ref: '#/components/schemas/Error'
+        'default':
           description: Unexpected error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
+                $ref: '#/components/schemas/Error'
 
   /carts/items:
     post:
@@ -1703,57 +1703,57 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CartItemsInput"
+              $ref: '#/components/schemas/CartItemsInput'
           application/xml:
             schema:
-              $ref: "#/components/schemas/CartItemsInput"
+              $ref: '#/components/schemas/CartItemsInput'
         required: true
       responses:
-        "201":
+        '201':
           description: Item added successfully
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Cart"
+                $ref: '#/components/schemas/Cart'
             application/xml:
               schema:
-                $ref: "#/components/schemas/Cart"
-        "400":
+                $ref: '#/components/schemas/Cart'
+        '400':
           description: Invalid input
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "401":
+                $ref: '#/components/schemas/Error'
+        '401':
           description: Authentication credentials invalid or missing
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "403":
+                $ref: '#/components/schemas/Error'
+        '403':
           description: Insufficient permissions
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "404":
+                $ref: '#/components/schemas/Error'
+        '404':
           description: Product variant not found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "422":
+                $ref: '#/components/schemas/Error'
+        '422':
           description: Validation exception
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "default":
+                $ref: '#/components/schemas/Error'
+        'default':
           description: Unexpected error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
+                $ref: '#/components/schemas/Error'
 
   /carts/items/{itemId}:
     patch:
@@ -1775,57 +1775,57 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CartItemsInputById"
+              $ref: '#/components/schemas/CartItemsInputById'
           application/xml:
             schema:
-              $ref: "#/components/schemas/CartItemsInputById"
+              $ref: '#/components/schemas/CartItemsInputById'
         required: true
       responses:
-        "200":
+        '200':
           description: LineItem updated successfully
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/LineItem"
+                $ref: '#/components/schemas/LineItem'
             application/xml:
               schema:
-                $ref: "#/components/schemas/LineItem"
-        "400":
+                $ref: '#/components/schemas/LineItem'
+        '400':
           description: Invalid itemId
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "401":
+                $ref: '#/components/schemas/Error'
+        '401':
           description: Authentication credentials invalid or missing
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "403":
+                $ref: '#/components/schemas/Error'
+        '403':
           description: Insufficient permissions
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "404":
+                $ref: '#/components/schemas/Error'
+        '404':
           description: Line item not found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "422":
+                $ref: '#/components/schemas/Error'
+        '422':
           description: Validation exception
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "default":
+                $ref: '#/components/schemas/Error'
+        'default':
           description: Unexpected error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
+                $ref: '#/components/schemas/Error'
 
     delete:
       tags:
@@ -1846,32 +1846,32 @@ paths:
             type: integer
             format: int64
       responses:
-        "204":
+        '204':
           description: Item removed successfully (or was not in cart)
-        "400":
+        '400':
           description: Invalid itemId
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "401":
+                $ref: '#/components/schemas/Error'
+        '401':
           description: Authentication credentials invalid or missing
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "403":
+                $ref: '#/components/schemas/Error'
+        '403':
           description: Insufficient permissions
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "default":
+                $ref: '#/components/schemas/Error'
+        'default':
           description: Unexpected error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
+                $ref: '#/components/schemas/Error'
 
   /orders:
     get:
@@ -1897,7 +1897,7 @@ paths:
               - cancelled
               - delivered
             description: Filter orders by status
-            example: "pending"
+            example: 'pending'
         - name: limit
           in: query
           required: false
@@ -1942,7 +1942,7 @@ paths:
             type: integer
             format: int64
       responses:
-        "200":
+        '200':
           description: Orders successfully returned
           headers:
             X-TotalCount:
@@ -1954,36 +1954,36 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/Order"
+                  $ref: '#/components/schemas/Order'
             application/xml:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/Order"
-        "400":
+                  $ref: '#/components/schemas/Order'
+        '400':
           description: Invalid filter parameters
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "401":
+                $ref: '#/components/schemas/Error'
+        '401':
           description: Authentication credentials invalid or missing
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "403":
+                $ref: '#/components/schemas/Error'
+        '403':
           description: Insufficient permissions (not a manager)
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "default":
+                $ref: '#/components/schemas/Error'
+        'default':
           description: Unexpected error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
+                $ref: '#/components/schemas/Error'
     post:
       tags:
         - order
@@ -1995,57 +1995,57 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/OrderInput"
+              $ref: '#/components/schemas/OrderInput'
           application/xml:
             schema:
-              $ref: "#/components/schemas/OrderInput"
+              $ref: '#/components/schemas/OrderInput'
         required: true
       responses:
-        "201":
+        '201':
           description: Order created successfully
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Order"
+                $ref: '#/components/schemas/Order'
             application/xml:
               schema:
-                $ref: "#/components/schemas/Order"
-        "400":
+                $ref: '#/components/schemas/Order'
+        '400':
           description: Invalid input or empty cart
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "401":
+                $ref: '#/components/schemas/Error'
+        '401':
           description: Authentication credentials invalid or missing
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "403":
+                $ref: '#/components/schemas/Error'
+        '403':
           description: Insufficient permissions
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "409":
+                $ref: '#/components/schemas/Error'
+        '409':
           description: Cart contains items with insufficient stock
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "422":
+                $ref: '#/components/schemas/Error'
+        '422':
           description: Validation exception
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "default":
+                $ref: '#/components/schemas/Error'
+        'default':
           description: Unexpected error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
+                $ref: '#/components/schemas/Error'
 
   /me/orders:
     get:
@@ -2071,7 +2071,7 @@ paths:
               - shipped
               - cancelled
             description: Filter orders by status
-            example: "pending"
+            example: 'pending'
         - name: limit
           in: query
           required: false
@@ -2116,7 +2116,7 @@ paths:
             type: integer
             format: int64
       responses:
-        "200":
+        '200':
           description: Orders successfully returned
           headers:
             X-TotalCount:
@@ -2128,36 +2128,36 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/Order"
+                  $ref: '#/components/schemas/Order'
             application/xml:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/Order"
-        "400":
+                  $ref: '#/components/schemas/Order'
+        '400':
           description: Invalid filter parameters
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "401":
+                $ref: '#/components/schemas/Error'
+        '401':
           description: Authentication credentials invalid or missing
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "403":
+                $ref: '#/components/schemas/Error'
+        '403':
           description: Insufficient permissions
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "default":
+                $ref: '#/components/schemas/Error'
+        'default':
           description: Unexpected error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
+                $ref: '#/components/schemas/Error'
 
   /orders/{orderId}:
     get:
@@ -2174,45 +2174,45 @@ paths:
             type: integer
             format: int64
       responses:
-        "200":
+        '200':
           description: Order successfully returned
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Order"
+                $ref: '#/components/schemas/Order'
             application/xml:
               schema:
-                $ref: "#/components/schemas/Order"
-        "400":
+                $ref: '#/components/schemas/Order'
+        '400':
           description: Invalid orderId
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "403":
+                $ref: '#/components/schemas/Error'
+        '403':
           description: Not authorized to view this order
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "401":
+                $ref: '#/components/schemas/Error'
+        '401':
           description: Authentication credentials invalid or missing
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "404":
+                $ref: '#/components/schemas/Error'
+        '404':
           description: Order not found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "default":
+                $ref: '#/components/schemas/Error'
+        'default':
           description: Unexpected error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
+                $ref: '#/components/schemas/Error'
 
   /orders/{orderId}/status-history:
     get:
@@ -2247,7 +2247,7 @@ paths:
             description: Show order status history entries considering this offset
             example: 1
       responses:
-        "200":
+        '200':
           description: OrderHistory successfully returned
           headers:
             X-TotalCount:
@@ -2259,42 +2259,42 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/OrderStatusHistory"
+                  $ref: '#/components/schemas/OrderStatusHistory'
             application/xml:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/OrderStatusHistory"
-        "400":
+                  $ref: '#/components/schemas/OrderStatusHistory'
+        '400':
           description: Invalid orderId
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "401":
+                $ref: '#/components/schemas/Error'
+        '401':
           description: Authentication credentials invalid or missing
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "403":
+                $ref: '#/components/schemas/Error'
+        '403':
           description: Not authorized to view this order
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "404":
+                $ref: '#/components/schemas/Error'
+        '404':
           description: Order not found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "default":
+                $ref: '#/components/schemas/Error'
+        'default':
           description: Unexpected error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
+                $ref: '#/components/schemas/Error'
 
   /orders/{orderId}/status:
     patch:
@@ -2316,57 +2316,57 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/OrderStatusInput"
+              $ref: '#/components/schemas/OrderStatusInput'
           application/xml:
             schema:
-              $ref: "#/components/schemas/OrderStatusInput"
+              $ref: '#/components/schemas/OrderStatusInput'
         required: true
       responses:
-        "200":
+        '200':
           description: Order status updated successfully
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Order"
+                $ref: '#/components/schemas/Order'
             application/xml:
               schema:
-                $ref: "#/components/schemas/Order"
-        "400":
+                $ref: '#/components/schemas/Order'
+        '400':
           description: Invalid orderId or status
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "401":
+                $ref: '#/components/schemas/Error'
+        '401':
           description: Authentication credentials invalid or missing
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "403":
+                $ref: '#/components/schemas/Error'
+        '403':
           description: Insufficient permissions (manager role required)
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "404":
+                $ref: '#/components/schemas/Error'
+        '404':
           description: Order not found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "409":
+                $ref: '#/components/schemas/Error'
+        '409':
           description: Invalid status transition
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "default":
+                $ref: '#/components/schemas/Error'
+        'default':
           description: Unexpected error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
+                $ref: '#/components/schemas/Error'
 
   /orders/{orderId}/cancel:
     post:
@@ -2384,51 +2384,51 @@ paths:
             type: integer
             format: int64
       responses:
-        "200":
+        '200':
           description: Order cancelled successfully
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Order"
+                $ref: '#/components/schemas/Order'
             application/xml:
               schema:
-                $ref: "#/components/schemas/Order"
-        "400":
+                $ref: '#/components/schemas/Order'
+        '400':
           description: Invalid orderId
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "401":
+                $ref: '#/components/schemas/Error'
+        '401':
           description: Authentication credentials invalid or missing
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "403":
+                $ref: '#/components/schemas/Error'
+        '403':
           description: Not authorized to cancel this order
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "404":
+                $ref: '#/components/schemas/Error'
+        '404':
           description: Order not found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "409":
+                $ref: '#/components/schemas/Error'
+        '409':
           description: Order cannot be cancelled in current status
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "default":
+                $ref: '#/components/schemas/Error'
+        'default':
           description: Unexpected error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
+                $ref: '#/components/schemas/Error'
 
   /orders/{orderId}/payment:
     post:
@@ -2452,10 +2452,10 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/PaymentIntentInput"
+              $ref: '#/components/schemas/PaymentIntentInput'
         required: true
       responses:
-        "200":
+        '201':
           description: Payment intent created successfully
           content:
             application/json:
@@ -2464,59 +2464,59 @@ paths:
                 properties:
                   intentId:
                     type: string
-                    example: "pi_1A2B3C4D5E6F"
+                    example: 'pi_1A2B3C4D5E6F'
                   clientSecret:
                     type: string
-                    example: "pi_1A2B3C4D5E6F_secret_abcd1234"
+                    example: 'pi_1A2B3C4D5E6F_secret_abcd1234'
                   amount:
                     type: integer
                     format: int64
                     example: 2999
                   currency:
                     type: string
-                    example: "usd"
-        "400":
+                    example: 'usd'
+        '400':
           description: Invalid orderId
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "401":
+                $ref: '#/components/schemas/Error'
+        '401':
           description: Authentication credentials invalid or missing
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "403":
+                $ref: '#/components/schemas/Error'
+        '403':
           description: Not authorized to pay for this order
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "404":
+                $ref: '#/components/schemas/Error'
+        '404':
           description: Order not found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "409":
+                $ref: '#/components/schemas/Error'
+        '409':
           description: Order is not in pending status or already paid
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "422":
+                $ref: '#/components/schemas/Error'
+        '422':
           description: Validation exception
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "default":
+                $ref: '#/components/schemas/Error'
+        'default':
           description: Unexpected error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
+                $ref: '#/components/schemas/Error'
 
   /auth/signup:
     post:
@@ -2531,39 +2531,39 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/UserInput"
+              $ref: '#/components/schemas/UserInput'
           application/xml:
             schema:
-              $ref: "#/components/schemas/UserInput"
+              $ref: '#/components/schemas/UserInput'
       security: []
       responses:
-        "201":
+        '201':
           description: User created successfully
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SignupResponse"
+                $ref: '#/components/schemas/SignupResponse'
             application/xml:
               schema:
-                $ref: "#/components/schemas/SignupResponse"
-        "409":
+                $ref: '#/components/schemas/SignupResponse'
+        '409':
           description: This email or username already exists
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "422":
+                $ref: '#/components/schemas/Error'
+        '422':
           description: Validation exception
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "default":
+                $ref: '#/components/schemas/Error'
+        'default':
           description: Unexpected error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
+                $ref: '#/components/schemas/Error'
 
   /auth/signin:
     post:
@@ -2588,7 +2588,7 @@ paths:
                   format: password
               required: [email, password]
       responses:
-        "200":
+        '200':
           description: Login successful
           headers:
             X-Expires-After:
@@ -2599,25 +2599,25 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AuthResponse"
-        "401":
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
           description: Invalid email/password supplied
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "422":
+                $ref: '#/components/schemas/Error'
+        '422':
           description: Validation exception
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "default":
+                $ref: '#/components/schemas/Error'
+        'default':
           description: Unexpected error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
+                $ref: '#/components/schemas/Error'
 
   /auth/signout:
     post:
@@ -2627,20 +2627,20 @@ paths:
       description: Invalidate the current session token
       operationId: logoutUser
       responses:
-        "200":
+        '200':
           description: Successfully logged out
-        "401":
+        '401':
           description: Authentication credentials invalid or missing
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "default":
+                $ref: '#/components/schemas/Error'
+        'default':
           description: Unexpected error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
+                $ref: '#/components/schemas/Error'
 
   /auth/forgotpassword:
     post:
@@ -2662,26 +2662,26 @@ paths:
                   format: email
               required: [email]
       responses:
-        "200":
+        '200':
           description: Password reset link sent to email
-        "422":
+        '422':
           description: Validation exception
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "429":
+                $ref: '#/components/schemas/Error'
+        '429':
           description: Too many reset requests, rate limit exceeded
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "default":
+                $ref: '#/components/schemas/Error'
+        'default':
           description: Unexpected error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
+                $ref: '#/components/schemas/Error'
 
   /auth/resetpassword:
     post:
@@ -2706,32 +2706,32 @@ paths:
                   format: password
               required: [token, newPassword]
       responses:
-        "200":
+        '200':
           description: Password reset successful
-        "400":
+        '400':
           description: Invalid or expired token
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "422":
+                $ref: '#/components/schemas/Error'
+        '422':
           description: Validation exception
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "429":
+                $ref: '#/components/schemas/Error'
+        '429':
           description: Too many reset attempts, rate limit exceeded
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "default":
+                $ref: '#/components/schemas/Error'
+        'default':
           description: Unexpected error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
+                $ref: '#/components/schemas/Error'
 
   /webhooks/stripe:
     post:
@@ -2753,17 +2753,17 @@ paths:
             type: string
           description: Stripe-generated signature for request verification
       responses:
-        "200":
+        '200':
           description: Webhook received and processed
-        "400":
+        '400':
           description: Invalid signature or malformed payload
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-        "default":
+                $ref: '#/components/schemas/Error'
+        'default':
           description: Unexpected error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
+                $ref: '#/components/schemas/Error'
