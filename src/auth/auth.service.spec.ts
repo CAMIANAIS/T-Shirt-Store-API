@@ -287,10 +287,14 @@ describe('AuthService', () => {
     );
     const updateUserSpy = jest
       .spyOn(prismaService.users, 'update')
-      .mockResolvedValue({} as Prisma.usersModel);
+      .mockResolvedValue({ email: 'test@example.com' } as Prisma.usersModel);
     const updateTokenSpy = jest
       .spyOn(prismaService.auth_tokens, 'update')
       .mockResolvedValue({} as Prisma.auth_tokensModel);
+    const sendEmailSpy = jest
+      .spyOn(emailService, 'sendEmail')
+      .mockResolvedValue(undefined);
+
     // Act
     await service.resetPassword('some-reset-token', 'newPassword123');
 
@@ -307,6 +311,14 @@ describe('AuthService', () => {
       },
       data: { revoked: true },
     });
+
+    // Assert — your turn. Was sendEmail called with 'test@example.com' as
+    // the `to` argument?
+    expect(sendEmailSpy).toHaveBeenCalledWith(
+      'test@example.com',
+      expect.any(String),
+      expect.any(String),
+    );
   });
 
   it('resetPassword throws when the token is missing, expired, or revoked', async () => {

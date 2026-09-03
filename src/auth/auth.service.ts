@@ -190,11 +190,16 @@ export class AuthService {
       },
       data: { revoked: true },
     });
-    await this.prismaService.users.update({
+    const updateUser = await this.prismaService.users.update({
       where: {
         user_id: resetToken.user_id,
       },
       data: { password_hash: password_hash },
     });
+    await this.emailService.sendEmail(
+      updateUser.email,
+      'Your password was changed',
+      'Your password was succesfully changed',
+    );
   }
 }
