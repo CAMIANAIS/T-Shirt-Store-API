@@ -6,6 +6,7 @@ import {
   Min,
   Max,
   MinLength,
+  IsEmail,
 } from 'class-validator';
 
 export class EnvironmentVariables {
@@ -48,4 +49,20 @@ export class EnvironmentVariables {
       'STRIPE_WEBHOOK_SECRET must be a real Stripe webhook signing secret (whsec_...)',
   })
   STRIPE_WEBHOOK_SECRET: string;
+
+  @IsString()
+  EMAIL_HOST: string;
+
+  @Type(() => Number)
+  @IsNumber()
+  EMAIL_PORT: number;
+
+  @IsEmail()
+  EMAIL_USER: string;
+
+  @IsString()
+  EMAIL_PASSWORD: string;
+
+  @IsString()
+  EMAIL_FROM: string;
 }

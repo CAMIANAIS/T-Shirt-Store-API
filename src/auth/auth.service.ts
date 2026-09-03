@@ -9,6 +9,7 @@ import { JwtService } from '@nestjs/jwt';
 import { SignUpDto } from './dto/signup.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import * as crypto from 'crypto';
+import { EmailService } from '../email/email.service';
 const saltOrRounds = 10;
 
 @Injectable()
@@ -17,6 +18,7 @@ export class AuthService {
     private userService: UsersService,
     private jwtService: JwtService,
     private prismaService: PrismaService,
+    private emailService: EmailService,
   ) {}
   async hashPassword(password: string) {
     const hash = await bcrypt.hash(password, saltOrRounds);
@@ -147,8 +149,12 @@ export class AuthService {
           expires_at: expiresAt,
         },
       });
+      return this.emailService.sendEmail(
+        user.email,
+        'Reset your password',
+        `Your password reset token is: ${token}`,
+      );
     }
-    console.log(token);
   }
 
   //   Hash provided token

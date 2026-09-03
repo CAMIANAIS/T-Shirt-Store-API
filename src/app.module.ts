@@ -16,6 +16,7 @@ import { CartsModule } from './carts/carts.module';
 import { OrdersModule } from './orders/orders.module';
 import { StripeModule } from './stripe/stripe.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
+import { EmailModule } from './email/email.module';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { WebhooksModule } from './webhooks/webhooks.module';
     OrdersModule,
     StripeModule,
     WebhooksModule,
+    EmailModule,
   ],
   controllers: [AppController],
   providers: [

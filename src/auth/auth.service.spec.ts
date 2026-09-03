@@ -6,12 +6,14 @@ import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { Prisma } from 'generated/prisma/browser';
+import { EmailService } from '../email/email.service';
 
 describe('AuthService', () => {
   let service: AuthService;
   let usersService: UsersService;
   let jwtService: JwtService;
   let prismaService: PrismaService;
+  let emailService: EmailService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -41,6 +43,10 @@ describe('AuthService', () => {
             },
           },
         },
+        {
+          provide: EmailService,
+          useValue: { sendEmail: jest.fn() },
+        },
       ],
     }).compile();
 
@@ -48,6 +54,7 @@ describe('AuthService', () => {
     usersService = module.get<UsersService>(UsersService);
     jwtService = module.get<JwtService>(JwtService);
     prismaService = module.get<PrismaService>(PrismaService);
+    emailService = module.get<EmailService>(EmailService);
   });
 
   it('should be defined', () => {
@@ -220,6 +227,9 @@ describe('AuthService', () => {
         user_agent: null,
         created_at: expect.any(Date),
       });
+    const sendEmailSpy = jest
+      .spyOn(emailService, 'sendEmail')
+      .mockResolvedValue(undefined);
 
     // Act
     await service.forgotPassword(mockUser.email);
@@ -236,18 +246,31 @@ describe('AuthService', () => {
       },
     });
     expect(createSpy).toHaveBeenCalledTimes(1);
+
+    // Assert — your turn. Was sendEmail called with mockUser.email as the
+    // `to` argument? Does the third argument (the body) contain the token?
+    expect(sendEmailSpy).toHaveBeenCalledWith(
+      mockUser.email,
+      'Reset your password',
+      expect.stringContaining('Your password reset token is:'),
+    );
   });
 
   it('forgotPassword does nothing when the email is unknown, but does not throw', async () => {
     // Arrange
     (usersService.userByEmail as jest.Mock).mockResolvedValue(null);
     const createSpy = jest.spyOn(prismaService.auth_tokens, 'create');
+    const sendEmailSpy = jest.spyOn(emailService, 'sendEmail');
     // Act
     const act = service.forgotPassword('unknown@example.com');
 
     // Assert — your turn. Does it reject? Was auth_tokens.create called?
     await expect(act).resolves.toBeUndefined();
     expect(createSpy).not.toHaveBeenCalled();
+
+    // Assert — your turn. Was sendEmail called? (Should it be, for an
+    // unknown email — no account, no address to send to.)
+    expect(sendEmailSpy).not.toHaveBeenCalled();
   });
 
   // resetPassword cases
