@@ -10,8 +10,8 @@ info:
     All endpoints require Bearer token authentication via JWT, except for the following public endpoints:
     - `POST /auth/signup` — Registration (can't have token yet)
     - `POST /auth/signin` — Login (can't have token yet)
-    - `POST /auth/forgot-password` — Password reset request (can't have token yet)
-    - `POST /auth/reset-password` — Password reset completion (can't have token yet)
+    - `POST /auth/forgotpassword` — Password reset request (can't have token yet)
+    - `POST /auth/resetpassword` — Password reset completion (can't have token yet)
     - `GET /products`, `GET /products/{productId}`, `GET /products/{productId}/variants`, `GET /products/{productId}/images`, `GET /categories` — Product/category browsing doesn't require authentication
     - `POST /webhooks/stripe` — Called by Stripe, not a user; authenticated via Stripe-Signature header instead of a bearer token
 
@@ -1516,6 +1516,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        "403":
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         "404":
           description: Cart not found
           content:
@@ -1540,6 +1546,12 @@ paths:
           description: Cart cleared successfully
         "401":
           description: Authentication credentials invalid or missing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Insufficient permissions
           content:
             application/json:
               schema:
@@ -1592,6 +1604,12 @@ paths:
                 $ref: "#/components/schemas/Error"
         "401":
           description: Authentication credentials invalid or missing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Insufficient permissions
           content:
             application/json:
               schema:
@@ -1662,6 +1680,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        "403":
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         "404":
           description: Line item not found
           content:
@@ -1714,6 +1738,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        "403":
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         "default":
           description: Unexpected error
           content:
@@ -1725,15 +1755,11 @@ paths:
     get:
       tags:
         - order
-      summary: Get current user's order
+      summary: Get all orders (manager only)
       description: |
-        Retrieve orders for the authenticated user, with optional filtering by status.
-
-        **Role-based scoping (JWT-based, automatic):**
-        - Regular user: returns only their own orders
-        - manager: returns all orders in the system (use this to build order-management dashboards)
-
-        The server reads the role from the JWT token and scopes results automatically — no query param needed.
+        Retrieve all orders in the system, with optional filtering by status. Manager-only —
+        requires the `manage` ability on `Order`; a client gets `403`. Clients should use
+        `GET /me/orders` for their own orders instead.
         operationId: getOrders
       parameters:
         - name: status
@@ -1824,6 +1850,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        "403":
+          description: Insufficient permissions (not a manager)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         "default":
           description: Unexpected error
           content:
@@ -1868,6 +1900,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        "403":
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         "409":
           description: Cart contains items with insufficient stock
           content:
@@ -1876,6 +1914,118 @@ paths:
                 $ref: "#/components/schemas/Error"
         "422":
           description: Validation exception
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "default":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /me/orders:
+    get:
+      tags:
+        - order
+      summary: Get the authenticated user's own orders
+      description: |
+        Retrieve orders belonging to the authenticated user, with optional filtering by status.
+        Always scoped to the caller — there is no way to see another user's orders through this
+        endpoint, regardless of role. Managers use `GET /orders` instead for the unscoped,
+        all-orders view.
+      operationId: getMyOrders
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - pending
+              - paid
+              - processing
+              - shipped
+              - cancelled
+            description: Filter orders by status
+            example: "pending"
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+            maximum: 50
+            description: Show orders considering this limit
+            example: 1
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+            description: Show orders considering this offset
+            example: 1
+        - name: fromDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: toDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: minAmount
+          in: query
+          required: false
+          description: Minimum total amount, in cents
+          schema:
+            type: integer
+            format: int64
+        - name: maxAmount
+          in: query
+          required: false
+          description: Maximum total amount, in cents
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Orders successfully returned
+          headers:
+            X-TotalCount:
+              description: Total number of orders matching the applied filters
+              schema:
+                type: integer
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Order"
+            application/xml:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Order"
+        "400":
+          description: Invalid filter parameters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Authentication credentials invalid or missing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Insufficient permissions
           content:
             application/json:
               schema:
@@ -1942,7 +2092,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
 
-  /orders/{orderId}/history:
+  /orders/{orderId}/status-history:
     get:
       tags:
         - order
@@ -2370,7 +2520,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
 
-  /auth/forgot-password:
+  /auth/forgotpassword:
     post:
       tags:
         - user
@@ -2411,7 +2561,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
 
-  /auth/reset-password:
+  /auth/resetpassword:
     post:
       tags:
         - user
