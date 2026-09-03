@@ -28,8 +28,8 @@ export class StockNotificationsProcessor extends WorkerHost {
   async process(job: Job<StockNotificationJob>): Promise<void> {
     const { productId } = job.data;
 
-    const product = await this.prismaService.products.findUnique({
-      where: { product_id: productId },
+    const product = await this.prismaService.products.findFirst({
+      where: { product_id: productId, deleted_at: null },
     });
     if (!product) {
       return;
