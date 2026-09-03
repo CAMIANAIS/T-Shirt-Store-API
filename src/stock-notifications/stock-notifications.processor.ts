@@ -6,6 +6,15 @@ import { S3Service } from '../s3/s3.service';
 import { STOCK_NOTIFICATIONS_QUEUE } from './stock-notifications.constants';
 import { StockNotificationJob } from './stock-notifications.producer';
 
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 @Processor(STOCK_NOTIFICATIONS_QUEUE)
 export class StockNotificationsProcessor extends WorkerHost {
   constructor(
@@ -55,11 +64,12 @@ export class StockNotificationsProcessor extends WorkerHost {
         continue;
       }
 
+      const safeName = escapeHtml(product.name);
       await this.emailService.sendEmail(
         like.users.email,
-        `${product.name} is back in stock!`,
-        `<p>${product.name} is back in stock.</p>${
-          imageUrl ? `<img src="${imageUrl}" alt="${product.name}" />` : ''
+        `${safeName} is back in stock!`,
+        `<p>${safeName} is back in stock.</p>${
+          imageUrl ? `<img src="${imageUrl}" alt="${safeName}" />` : ''
         }`,
       );
 
