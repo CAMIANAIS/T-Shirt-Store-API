@@ -2,12 +2,14 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { VariantsService } from './variants.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ProductsService } from '../products/products.service';
+import { StockNotificationsProducer } from '../stock-notifications/stock-notifications.producer';
 import { NotFoundException, ConflictException } from '@nestjs/common';
 
 describe('VariantsService', () => {
   let service: VariantsService;
   let prismaService: PrismaService;
   let productsService: ProductsService;
+  let stockNotificationsProducer: StockNotificationsProducer;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -30,12 +32,21 @@ describe('VariantsService', () => {
             findOne: jest.fn(),
           },
         },
+        {
+          provide: StockNotificationsProducer,
+          useValue: {
+            notifyRestock: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
     service = module.get<VariantsService>(VariantsService);
     prismaService = module.get<PrismaService>(PrismaService);
     productsService = module.get<ProductsService>(ProductsService);
+    stockNotificationsProducer = module.get<StockNotificationsProducer>(
+      StockNotificationsProducer,
+    );
   });
   afterEach(() => {
     jest.clearAllMocks();
@@ -350,5 +361,71 @@ describe('VariantsService', () => {
       updatedAt: new Date('2026-01-02'),
     });
     expect(updateSpy).toHaveBeenCalled();
+  });
+
+  it('update triggers a restock notification when stock crosses from below 3 to 3 or more', async () => {
+    // Arrange
+    const existingVariant = {
+      product_variant_id: 1,
+      product_id: 5,
+      size: 'M',
+      color: 'red',
+      stock_quantity: 2,
+      sku_code: 'TSH-RED-MD',
+      status: 'active',
+      created_at: new Date('2026-01-01'),
+      updated_at: new Date('2026-01-02'),
+    };
+    (productsService.findOne as jest.Mock).mockResolvedValue({});
+    jest
+      .spyOn(prismaService.product_variants, 'findFirst')
+      .mockResolvedValue(existingVariant);
+    jest
+      .spyOn(prismaService.product_variants, 'update')
+      .mockResolvedValue({ ...existingVariant, stock_quantity: 5 });
+    const notifyRestockSpy = jest.spyOn(
+      stockNotificationsProducer,
+      'notifyRestock',
+    );
+
+    // Act
+    await service.update(5, 1, { stockQuantity: 5 });
+
+    // Assert — your turn. Was `notifyRestock` called, and with which
+    // productId (the variant's `product_id`, not its `product_variant_id`)?
+    expect(notifyRestockSpy).toHaveBeenCalledWith(5);
+  });
+
+  it('update does not trigger a restock notification when stock does not cross the threshold', async () => {
+    // Arrange
+    const existingVariant = {
+      product_variant_id: 1,
+      product_id: 5,
+      size: 'M',
+      color: 'red',
+      stock_quantity: 10,
+      sku_code: 'TSH-RED-MD',
+      status: 'active',
+      created_at: new Date('2026-01-01'),
+      updated_at: new Date('2026-01-02'),
+    };
+    (productsService.findOne as jest.Mock).mockResolvedValue({});
+    jest
+      .spyOn(prismaService.product_variants, 'findFirst')
+      .mockResolvedValue(existingVariant);
+    jest
+      .spyOn(prismaService.product_variants, 'update')
+      .mockResolvedValue({ ...existingVariant, stock_quantity: 20 });
+    const notifyRestockSpy = jest.spyOn(
+      stockNotificationsProducer,
+      'notifyRestock',
+    );
+
+    // Act
+    await service.update(5, 1, { stockQuantity: 20 });
+
+    // Assert — your turn. Was `notifyRestock` never called, since stock was
+    // already at/above 3 before this update (10 → 20 isn't a crossing)?
+    expect(notifyRestockSpy).not.toHaveBeenCalled();
   });
 });

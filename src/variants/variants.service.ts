@@ -8,6 +8,7 @@ import { ProductsService } from '../products/products.service';
 import { ProductVariantInputDto } from './dto/createProductVariant.dto';
 import { ProductVariantUpdateInputDto } from './dto/updateProductVariant.dto';
 import { product_variantsModel as ProductVariantModel } from '../../generated/prisma/models';
+import { StockNotificationsProducer } from '../stock-notifications/stock-notifications.producer';
 
 export type ProductVariant = {
   productVariantId: number;
@@ -26,6 +27,7 @@ export class VariantsService {
   constructor(
     private prismaService: PrismaService,
     private productsService: ProductsService,
+    private stockNotificationsProducer: StockNotificationsProducer,
   ) {}
 
   private toProductVariant(row: ProductVariantModel): ProductVariant {
@@ -156,6 +158,10 @@ export class VariantsService {
         ...(dto.status && { status: dto.status }),
       },
     });
+
+    if (existingVariant.stock_quantity < 3 && updated.stock_quantity >= 3) {
+      await this.stockNotificationsProducer.notifyRestock(productId);
+    }
 
     return this.toProductVariant(updated);
   }

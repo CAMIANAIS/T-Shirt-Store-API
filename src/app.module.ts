@@ -1,6 +1,9 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { BullModule } from '@nestjs/bullmq';
+import Redis from 'ioredis';
 import { AppController } from './app.controller';
+import { EnvironmentVariables } from './config/environment';
 import { CategoriesModule } from './categories/categories.module';
 import { AppService } from './app.service';
 import { validateConfig } from './config/validate-config';
@@ -23,6 +26,16 @@ import { EmailModule } from './email/email.module';
     ConfigModule.forRoot({
       isGlobal: true,
       validate: validateConfig,
+    }),
+    BullModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (
+        configService: ConfigService<EnvironmentVariables, true>,
+      ) => ({
+        connection: new Redis(configService.get('REDIS_URL', { infer: true }), {
+          maxRetriesPerRequest: null,
+        }),
+      }),
     }),
     CategoriesModule,
     PrismaModule,
