@@ -68,12 +68,14 @@ export class ProductsController {
   remove(@Param('productId') productId: number) {
     return this.productService.remove(productId);
   }
+  @HttpCode(HttpStatus.OK)
   @Post(':productId/activate')
   @UseGuards(JWTAuthGuard, PoliciesGuard)
   @CheckPolicies((ability: AppAbility) => ability.can('update', 'Product'))
   activate(@Param('productId') productId: number) {
     return this.productService.activate(productId);
   }
+  @HttpCode(HttpStatus.OK)
   @Post(':productId/deactivate')
   @UseGuards(JWTAuthGuard, PoliciesGuard)
   @CheckPolicies((ability: AppAbility) => ability.can('update', 'Product'))

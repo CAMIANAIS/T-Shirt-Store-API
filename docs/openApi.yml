@@ -1366,6 +1366,128 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
 
+  /products/{productId}/activate:
+    post:
+      tags:
+        - product
+      summary: Activate a product
+      description: |
+        Sets the product's status to `active`. Idempotent: calling this on an already-active
+        product just returns it unchanged, no error. Manager-only.
+      operationId: activateProduct
+      parameters:
+        - name: productId
+          in: path
+          description: ID of the product to activate
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Product activated successfully (or already active)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "400":
+          description: Invalid productId
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Authentication credentials invalid or missing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Cannot activate a discontinued product
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "default":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /products/{productId}/deactivate:
+    post:
+      tags:
+        - product
+      summary: Deactivate a product
+      description: |
+        Sets the product's status to `inactive`. Idempotent: calling this on an already-inactive
+        product just returns it unchanged, no error. Manager-only.
+      operationId: deactivateProduct
+      parameters:
+        - name: productId
+          in: path
+          description: ID of the product to deactivate
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Product deactivated successfully (or already inactive)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "400":
+          description: Invalid productId
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Authentication credentials invalid or missing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Cannot deactivate a discontinued product
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "default":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
   /products/{productId}/likes:
     post:
       tags:
