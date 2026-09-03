@@ -20,6 +20,14 @@ interface Cart {
   user_id: number;
 }
 
+interface Category {
+  category_id: number;
+}
+
+interface User {
+  user_id: number;
+}
+
 export interface JwtUser {
   sub: number;
   role: string;
@@ -34,7 +42,12 @@ type Action =
   | 'cancel'
   | 'advanceStatus';
 type Subject =
-  InferSubjects<Order | Product | Cart> | 'Order' | 'Product' | 'Cart';
+  | InferSubjects<Order | Product | Cart | Category | User>
+  | 'Order'
+  | 'Product'
+  | 'Cart'
+  | 'Category'
+  | 'User';
 export type AppAbility = MongoAbility<[action: Action, subject: Subject]>;
 @Injectable()
 export class CaslAbilityFactory {
@@ -44,6 +57,9 @@ export class CaslAbilityFactory {
       can('manage', 'Product');
       can('manage', 'Order');
       can('advanceStatus', 'Order', ['status']);
+      can('manage', 'Category');
+      can('read', 'User');
+      can('delete', 'User');
     }
     if (user.role === 'client') {
       can('create', 'Order', { user_id: user.sub });
@@ -52,6 +68,8 @@ export class CaslAbilityFactory {
       can('read', 'Product');
       can('manage', 'Cart', { user_id: user.sub });
     }
+    // Both roles: update own profile only, never someone else's.
+    can('update', 'User', { user_id: user.sub });
     return build();
   }
 }
