@@ -3,13 +3,19 @@ import { ProductsService } from './products.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ProductInputDto } from './dto/createProduct.dto';
 import { ProductUpdateInputDto } from './dto/updateProduct.dto';
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { StripeService } from '../stripe/stripe.service';
+import { S3Service } from '../s3/s3.service';
 
 describe('ProductsService', () => {
   let service: ProductsService;
   let prismaService: PrismaService;
   let stripeService: StripeService;
+  let s3Service: S3Service;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -34,6 +40,11 @@ describe('ProductsService', () => {
             prices_history: {
               findFirst: jest.fn(),
             },
+            product_images: {
+              findMany: jest.fn(),
+              count: jest.fn(),
+              create: jest.fn(),
+            },
           },
         },
         {
@@ -44,12 +55,20 @@ describe('ProductsService', () => {
             },
           },
         },
+        {
+          provide: S3Service,
+          useValue: {
+            upload: jest.fn(),
+            getSignedUrl: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
     service = module.get<ProductsService>(ProductsService);
     prismaService = module.get<PrismaService>(PrismaService);
     stripeService = module.get<StripeService>(StripeService);
+    s3Service = module.get<S3Service>(S3Service);
   });
 
   it('should be defined', () => {
@@ -603,6 +622,159 @@ describe('ProductsService', () => {
       // Assert — your turn. Does it reject with NotFoundException? Was
       // `paymentLinks.create` never called?
       expect(createLinkSpy).not.toHaveBeenCalled();
+      await expect(act).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('findImages', () => {
+    it('maps rows to the url-based ProductImage shape, ordered by displayOrder', async () => {
+      // Arrange
+      jest.spyOn(service, 'findOne').mockResolvedValue({} as any);
+      jest.spyOn(prismaService.product_images, 'findMany').mockResolvedValue([
+        {
+          image_id: 1,
+          filename: 'a-uuid',
+          extension: 'png',
+          display_order: 0,
+          alt_text: 'front view',
+          created_at: new Date('2026-01-01'),
+          updated_at: new Date('2026-01-01'),
+        },
+      ] as any);
+      const getSignedUrlSpy = jest
+        .spyOn(s3Service, 'getSignedUrl')
+        .mockResolvedValue('https://signed.example.com/a-uuid.png');
+
+      // Act
+      const result = await service.findImages(42);
+
+      // Assert — your turn. Was `getSignedUrl` called with the key
+      // `products/42/a-uuid.png`? Does `result[0]` have a `url` field (no
+      // `bucketName`/`filename`/`extension`/`product`), matching
+      // { id: 1, url: 'https://signed.example.com/a-uuid.png',
+      //   displayOrder: 0, altText: 'front view', ... }?
+      expect(getSignedUrlSpy).toHaveBeenCalledWith('products/42/a-uuid.png');
+      expect(result).toEqual([
+        {
+          id: 1,
+          url: 'https://signed.example.com/a-uuid.png',
+          displayOrder: 0,
+          altText: 'front view',
+          createdAt: new Date('2026-01-01'),
+          updatedAt: new Date('2026-01-01'),
+        },
+      ]);
+    });
+
+    it('throws NotFoundException and never queries images when the product does not exist', async () => {
+      // Arrange
+      jest.spyOn(service, 'findOne').mockRejectedValue(new NotFoundException());
+      const findManySpy = jest.spyOn(prismaService.product_images, 'findMany');
+
+      // Act
+      const act = service.findImages(999);
+
+      // Assert — your turn. Does it reject with NotFoundException? Was
+      // `product_images.findMany` never called, since `findOne` threw first?
+      expect(findManySpy).not.toHaveBeenCalled();
+      await expect(act).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('addImage', () => {
+    const fakeFile = {
+      buffer: Buffer.from('fake-image-bytes'),
+      mimetype: 'image/png',
+    } as Express.Multer.File;
+
+    it('uploads to S3 and creates a DB row when the file type is supported', async () => {
+      // Arrange
+      jest.spyOn(service, 'findOne').mockResolvedValue({} as any);
+      jest.spyOn(prismaService.product_images, 'count').mockResolvedValue(2);
+      const uploadSpy = jest
+        .spyOn(s3Service, 'upload')
+        .mockResolvedValue(undefined);
+      jest.spyOn(prismaService.product_images, 'create').mockResolvedValue({
+        image_id: 10,
+        display_order: 2,
+        alt_text: 'front view',
+        created_at: new Date('2026-01-01'),
+        updated_at: new Date('2026-01-01'),
+      } as any);
+      jest
+        .spyOn(s3Service, 'getSignedUrl')
+        .mockResolvedValue('https://signed.example.com/new-uuid.png');
+
+      // Act
+      const result = await service.addImage(42, fakeFile, {
+        altText: 'front view',
+      } as any);
+
+      // Assert — your turn. Was `s3Service.upload` called with the fake
+      // buffer and `image/png`? When `dto.displayOrder` is missing, does the
+      // created row's `display_order` come from the existing image count
+      // (2)? Does `result` have a `url` field, no raw storage fields?
+      expect(uploadSpy).toHaveBeenCalledWith(
+        expect.stringMatching(/^products\/42\/.+\.png$/),
+        fakeFile.buffer,
+        'image/png',
+      );
+      expect(result).toEqual({
+        id: 10,
+        url: 'https://signed.example.com/new-uuid.png',
+        displayOrder: 2,
+        altText: 'front view',
+        createdAt: new Date('2026-01-01'),
+        updatedAt: new Date('2026-01-01'),
+      });
+    });
+
+    it('throws BadRequestException for an unsupported mimetype, and never touches S3 or the DB', async () => {
+      // Arrange
+      jest.spyOn(service, 'findOne').mockResolvedValue({} as any);
+      const uploadSpy = jest.spyOn(s3Service, 'upload');
+      const createSpy = jest.spyOn(prismaService.product_images, 'create');
+      const unsupportedFile = {
+        buffer: Buffer.from('not-an-image'),
+        mimetype: 'application/pdf',
+      } as Express.Multer.File;
+
+      // Act
+      const act = service.addImage(42, unsupportedFile, {} as any);
+
+      // Assert — your turn. Does it reject with BadRequestException? Were
+      // `upload` and `create` never called?
+      expect(uploadSpy).not.toHaveBeenCalled();
+      expect(createSpy).not.toHaveBeenCalled();
+      await expect(act).rejects.toThrow(BadRequestException);
+    });
+
+    it('throws ConflictException when the product already has the max number of images', async () => {
+      // Arrange
+      jest.spyOn(service, 'findOne').mockResolvedValue({} as any);
+      jest.spyOn(prismaService.product_images, 'count').mockResolvedValue(10);
+      const uploadSpy = jest.spyOn(s3Service, 'upload');
+
+      // Act
+      const act = service.addImage(42, fakeFile, {} as any);
+
+      // Assert — your turn. Does it reject with ConflictException? Was
+      // `upload` never called, since the cap check happens before the S3 call?
+      expect(uploadSpy).not.toHaveBeenCalled();
+      await expect(act).rejects.toThrow(ConflictException);
+    });
+
+    it('throws NotFoundException when the product does not exist', async () => {
+      // Arrange
+      jest.spyOn(service, 'findOne').mockRejectedValue(new NotFoundException());
+      const uploadSpy = jest.spyOn(s3Service, 'upload');
+
+      // Act
+      const act = service.addImage(999, fakeFile, {} as any);
+
+      // Assert — your turn. Does it reject with NotFoundException? Was
+      // `upload` never called?
+      expect(uploadSpy).not.toHaveBeenCalled();
       await expect(act).rejects.toThrow(NotFoundException);
     });
   });

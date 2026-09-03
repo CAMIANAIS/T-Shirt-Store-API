@@ -65,4 +65,19 @@ export class EnvironmentVariables {
 
   @IsString()
   EMAIL_FROM: string;
+
+  @IsString()
+  @Matches(/^AKIA/, {
+    message: 'AWS_ACCESS_KEY_ID must be a real AWS (AKIA...)',
+  })
+  AWS_ACCESS_KEY_ID: string;
+
+  @IsString()
+  AWS_SECRET_ACCESS_KEY: string;
+
+  @IsString()
+  AWS_REGION: string;
+
+  @IsString()
+  AWS_S3_BUCKET_NAME: string;
 }

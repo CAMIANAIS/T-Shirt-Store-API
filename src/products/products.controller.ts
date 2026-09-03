@@ -10,7 +10,10 @@ import {
   Post,
   Query,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { ProductsService } from './products.service';
 import { ProductInputDto } from './dto/createProduct.dto';
 import { JWTAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -19,6 +22,7 @@ import { PoliciesGuard } from '../casl/policies.guard';
 import { CheckPolicies } from '../casl/policies.decorator';
 import { AppAbility } from '../casl/casl-ability.factory';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { CreateProductImageDto } from './dto/productImage.dto';
 interface JwtPayload {
   sub: number;
 }
@@ -103,5 +107,27 @@ export class ProductsController {
     @Param('productId') productId: number,
   ) {
     return this.productService.createPaymentLink(userId.sub, productId);
+  }
+
+  @Get(':productId/images')
+  findImages(
+    @Param('productId') productId: number,
+    @Query('limit') limit: number,
+    @Query('offset') offset: number,
+  ) {
+    return this.productService.findImages(productId, limit, offset);
+  }
+
+  @HttpCode(HttpStatus.CREATED)
+  @UseGuards(JWTAuthGuard, PoliciesGuard)
+  @CheckPolicies((ability: AppAbility) => ability.can('manage', 'Product'))
+  @Post(':productId/images')
+  @UseInterceptors(FileInterceptor('file'))
+  addImage(
+    @Param('productId') productId: number,
+    @UploadedFile() file: Express.Multer.File,
+    @Body() createProductImageDto: CreateProductImageDto,
+  ) {
+    return this.productService.addImage(productId, file, createProductImageDto);
   }
 }

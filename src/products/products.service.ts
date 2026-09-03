@@ -1,13 +1,25 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { StripeService } from '../stripe/stripe.service';
+import { S3Service } from '../s3/s3.service';
 import { ProductInputDto } from './dto/createProduct.dto';
 import { productsModel } from '../../generated/prisma/models';
 import { ProductUpdateInputDto } from './dto/updateProduct.dto';
+import { CreateProductImageDto } from './dto/productImage.dto';
+
+const MAX_IMAGES_PER_PRODUCT = 10;
+const MIME_TO_EXTENSION: Record<string, string> = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+  'image/gif': 'gif',
+};
 
 export type Product = {
   productId: number;
@@ -25,11 +37,21 @@ export type PaymentLinkResult = {
   expiresAt: null;
 };
 
+export type ProductImage = {
+  id: number;
+  url: string;
+  displayOrder: number;
+  altText: string | null;
+  createdAt: Date | null;
+  updatedAt: Date | null;
+};
+
 @Injectable()
 export class ProductsService {
   constructor(
     private prismaService: PrismaService,
     private stripeService: StripeService,
+    private s3Service: S3Service,
   ) {}
   private toProduct(row: productsModel): Product {
     return {
@@ -232,5 +254,90 @@ export class ProductsService {
       },
     });
     return { paymentLink: link.url, expiresAt: null };
+  }
+
+  private imageKey(productId: number, filename: string, extension: string) {
+    return `products/${productId}/${filename}.${extension}`;
+  }
+
+  async findImages(
+    productId: number,
+    limit?: number,
+    offset?: number,
+  ): Promise<ProductImage[]> {
+    await this.findOne(productId);
+
+    const images = await this.prismaService.product_images.findMany({
+      where: { product_id: productId },
+      orderBy: { display_order: 'asc' },
+      take: limit,
+      skip: offset,
+    });
+
+    return Promise.all(
+      images.map(async (row) => ({
+        id: row.image_id,
+        url: await this.s3Service.getSignedUrl(
+          this.imageKey(productId, row.filename, row.extension),
+        ),
+        displayOrder: row.display_order,
+        altText: row.alt_text,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+      })),
+    );
+  }
+
+  async addImage(
+    productId: number,
+    file: Express.Multer.File,
+    dto: CreateProductImageDto,
+  ): Promise<ProductImage> {
+    await this.findOne(productId);
+
+    const extension = MIME_TO_EXTENSION[file.mimetype];
+    if (!extension) {
+      throw new BadRequestException(
+        'Unsupported image format — supported: jpg, png, webp, gif',
+      );
+    }
+
+    const existingCount = await this.prismaService.product_images.count({
+      where: { product_id: productId },
+    });
+    if (existingCount >= MAX_IMAGES_PER_PRODUCT) {
+      throw new ConflictException(
+        `Product already has the maximum of ${MAX_IMAGES_PER_PRODUCT} images`,
+      );
+    }
+
+    const filename = randomUUID();
+    await this.s3Service.upload(
+      this.imageKey(productId, filename, extension),
+      file.buffer,
+      file.mimetype,
+    );
+
+    const created = await this.prismaService.product_images.create({
+      data: {
+        product_id: productId,
+        bucket_name: this.s3Service.bucketName,
+        filename,
+        extension,
+        display_order: dto.displayOrder ?? existingCount,
+        alt_text: dto.altText,
+      },
+    });
+
+    return {
+      id: created.image_id,
+      url: await this.s3Service.getSignedUrl(
+        this.imageKey(productId, filename, extension),
+      ),
+      displayOrder: created.display_order,
+      altText: created.alt_text,
+      createdAt: created.created_at,
+      updatedAt: created.updated_at,
+    };
   }
 }
