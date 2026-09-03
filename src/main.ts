@@ -1,8 +1,21 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common';
+import {
+  UnprocessableEntityException,
+  ValidationError,
+  ValidationPipe,
+} from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
+
+function flattenValidationErrors(errors: ValidationError[]): string[] {
+  return errors.flatMap((error) =>
+    error.constraints
+      ? Object.values(error.constraints)
+      : flattenValidationErrors(error.children ?? []),
+  );
+}
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { rawBody: true });
   // Known gap, deliberately deferred: no origin restriction (allows '*') since no
@@ -28,6 +41,8 @@ async function bootstrap() {
       transformOptions: {
         enableImplicitConversion: true,
       },
+      exceptionFactory: (errors) =>
+        new UnprocessableEntityException(flattenValidationErrors(errors)),
     }),
   );
 
