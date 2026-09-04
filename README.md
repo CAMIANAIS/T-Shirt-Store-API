@@ -148,6 +148,25 @@ through this week's implementation. Full rationale for the schema items lives in
   email-verification infra this app doesn't have, so it's mitigated with rate limiting on
   `/auth/signup` instead.
 
+**CASL & payments (Week 4)**
+
+- **`PoliciesGuard` fails closed, not open, when a route is missing `@CheckPolicies`.**
+  `Array.prototype.every()` on an empty handler list is vacuously `true` in plain JS — a guard
+  applied without the decorator would have silently granted access to any authenticated user
+  instead of none. Changed to throw instead, so a future route added without the decorator breaks
+  loudly at that route rather than leaking access.
+- **Kept the per-product Stripe Payment Link, didn't switch to a cart-only Payment Intents flow**,
+  despite the mentor raising it twice. `challenge.md` literally requires single-product Payment
+  Links, so the Payment Intent flow (cart checkout) was built *in addition to*, not instead of.
+- **Product images are served via signed S3 URLs from a private bucket, never a public bucket
+  URL.** The DB only stores the S3 key; a fresh signed URL is generated per request, so access can
+  be revoked/expired without touching stored data.
+- **The stock-notification threshold triggers on crossing *up* through 3 (restock), not crossing
+  down (low-stock warning).** `challenge.md`'s wording ("when stock reaches 3, notify users who
+  liked it") is genuinely ambiguous between the two; settled on restock to match
+  `docs/schemaERD_decisions.md` #14. A separate, higher-threshold "only 5 left" indicator was
+  considered but deferred as a distinct feature, not folded into this alert.
+
 **Queue, logging & deploy (Week 4)**
 
 - **BullMQ retry/backoff (3 attempts, exponential, 5s base delay)** on the stock-notification job.
