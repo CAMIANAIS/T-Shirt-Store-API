@@ -74,7 +74,7 @@ describe('ProductsController', () => {
       .mockResolvedValue(mockCreated as any);
 
     // Act
-    const result = await controller.create(dto as any);
+    const result = await controller.create(dto);
 
     // Assert — your turn. Was create called with dto? Does the controller
     // return exactly what the service returned?
@@ -108,7 +108,7 @@ describe('ProductsController', () => {
       .mockResolvedValue(mockUpdated as any);
 
     // Act
-    const result = await controller.update(1, dto as any);
+    const result = await controller.update(1, dto);
 
     // Assert — your turn. Was update called with (1, dto)? Does the
     // controller return exactly what the service returned?

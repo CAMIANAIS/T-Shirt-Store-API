@@ -40,7 +40,7 @@ export class VariantDto {
   @IsOptional()
   @IsString()
   @IsIn(['active', 'inactive', 'discontinued'])
-  status: string;
+  status?: string;
 
   @ApiProperty({ example: 2999, description: 'Price in cents' })
   @IsNumber()
@@ -73,5 +73,5 @@ export class ProductInputDto {
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => VariantDto)
-  variants: VariantDto[];
+  variants?: VariantDto[];
 }

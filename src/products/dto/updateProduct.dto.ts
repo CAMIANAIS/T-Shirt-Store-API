@@ -12,7 +12,7 @@ export class ProductUpdateInputDto {
   @IsOptional()
   @IsString()
   @IsNotEmpty()
-  name: string;
+  name?: string;
 
   @ApiProperty({
     example: 'long sleeves, 100% cotton',
@@ -21,7 +21,7 @@ export class ProductUpdateInputDto {
   @IsOptional()
   @IsString()
   @IsNotEmpty()
-  description: string;
+  description?: string;
 
   @ApiProperty({
     enum: ['active', 'inactive', 'discontinued'],
@@ -31,10 +31,10 @@ export class ProductUpdateInputDto {
   @IsString()
   @IsNotEmpty()
   @IsIn(['active', 'inactive', 'discontinued'])
-  status: string;
+  status?: string;
 
   @ApiProperty({ example: 5, required: false })
   @IsOptional()
   @IsNumber()
-  categoryId: number;
+  categoryId?: number;
 }

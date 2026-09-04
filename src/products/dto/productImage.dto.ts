@@ -12,12 +12,12 @@ export class CreateProductImageDto {
   @ApiProperty({ example: 0, required: false })
   @IsOptional()
   @IsNumber()
-  displayOrder: number;
+  displayOrder?: number;
 
   @ApiProperty({ example: 'Product front view', required: false })
   @IsOptional()
   @IsString()
-  altText: string;
+  altText?: string;
 }
 
 export class ProductImageDto {

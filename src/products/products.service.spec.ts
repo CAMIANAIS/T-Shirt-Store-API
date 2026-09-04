@@ -1,8 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ProductsService } from './products.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { ProductInputDto } from './dto/createProduct.dto';
-import { ProductUpdateInputDto } from './dto/updateProduct.dto';
 import {
   BadRequestException,
   ConflictException,
@@ -158,7 +156,7 @@ describe('ProductsService', () => {
       .mockResolvedValue(mockCreated);
 
     // Act
-    const result = await service.create(dto as ProductInputDto);
+    const result = await service.create(dto);
 
     // Assert — your turn. Was `create` called with the right `data` shape
     // (no `product_variants` key at all, since dto.variants is undefined)?
@@ -207,7 +205,7 @@ describe('ProductsService', () => {
       .mockResolvedValue(mockCreated);
 
     // Act
-    await service.create(dto as ProductInputDto);
+    await service.create(dto);
 
     // Assert — your turn. Was `create` called with a
     // `product_variants: { create: [...] }` key, using snake_case field
@@ -306,7 +304,7 @@ describe('ProductsService', () => {
       .mockResolvedValue(updatedRow);
 
     // Act
-    const result = await service.update(1, dto as ProductUpdateInputDto);
+    const result = await service.update(1, dto);
 
     // Assert — your turn. Was `update` called with the right `where`/`data`
     // shape? Does `result` have the camelCase Product shape with the new name?
@@ -331,7 +329,7 @@ describe('ProductsService', () => {
     // Act
     const act = service.update(999, {
       name: 'winter-tshirt',
-    } as ProductUpdateInputDto);
+    });
 
     // Assert — your turn. Does it reject with NotFoundException? Was
     // `update` never called, since findOne threw first?

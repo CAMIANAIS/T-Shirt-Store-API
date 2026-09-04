@@ -8,7 +8,7 @@ export class OrderStatusHistoryDto {
   @IsString()
   @IsNotEmpty()
   @IsIn(['pending', 'paid', 'processing', 'shipped', 'cancelled'])
-  status?: string;
+  status: string;
 
   @ApiProperty({ example: '2026-01-01T00:00:00.000Z', nullable: true })
   @IsDateString()
