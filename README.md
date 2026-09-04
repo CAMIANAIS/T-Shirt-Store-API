@@ -43,7 +43,8 @@ or invalid.
 - `PORT` (number): port the server listens on. Min `1`, max `65535`. Example: `3000`.
 - `NODE_ENV` (string): e.g. `development`, `test`, `production`.
 
-Stripe-related variables aren't listed yet — payment integration isn't built.
+See `.env.example` for the full list of required variables, including Stripe, email, AWS S3, and
+Redis — all validated at boot by `src/config/environment.ts`.
 
 Build the database from `docs/schemaERD.sql` (idempotent, safe to re-run), then generate the
 Prisma client:
@@ -72,15 +73,12 @@ npm run test:e2e # end-to-end tests
 
 ## Project status
 
-**Week 3 checkpoint: authentication, products, and SKUs/variants, implemented and
-unit-tested.** See `docs/architecture.md` for the production architecture write-up (System
-Design Review deliverable).
-
-**Week 4 in progress**: CASL role-based authorization (Manager/Client abilities, enforced on
-Products/Variants routes) and a global exception filter (catches unhandled errors, matches the
-API contract's `Error` schema, never leaks internal details) are implemented and verified against
-a running instance. CORS, Helmet, and a live Swagger UI are also wired in. Cart/orders, Stripe
-payments, and background jobs are still in progress for the next milestone.
+**All minimum required features are implemented and tested**: authentication, product/SKU
+catalog with images, CASL role-based authorization (Manager/Client), cart and orders, both Stripe
+flows (Payment Links and Payment Intents) with verified webhooks, BullMQ stock-notification
+queue, S3 product images, structured JSON logging, and full Swagger documentation. See
+`docs/architecture.md` for the production architecture write-up (System Design Review
+deliverable). CORS, Helmet, and a live Swagger UI are wired in.
 
 ## Documentation
 
