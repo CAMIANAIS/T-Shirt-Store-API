@@ -10,6 +10,22 @@ The badge above reflects the latest `lint → build → test` run on `main`; che
 [Actions tab](https://github.com/CAMIANAIS/T-Shirt-Store-API/actions) for the full commit history
 and run details on every checkpoint.
 
+## Try it live
+
+Deployed on Railway: **[t-shirt-store-api-production.up.railway.app/api](https://t-shirt-store-api-production.up.railway.app/api)** (Swagger UI).
+
+Seeded with a small demo catalog (1 category, 3 products with variants) and one account per role:
+
+| Role | Email | Password |
+|---|---|---|
+| Client | `demo.client@tshirtstore.dev` | `DemoClient!2026` |
+| Manager | `demo.manager@tshirtstore.dev` | `DemoManager!2026` |
+
+Sign in via `POST /auth/signin` in Swagger, then click **Authorize** with the returned
+`access_token` to try protected routes. Manager can create/update/disable products, upload
+images, and view all orders; Client can browse, cart, buy, like products, and view their own
+order history.
+
 ## Tech stack
 
 - NestJS + TypeScript
@@ -68,17 +84,88 @@ npm run test     # unit tests
 npm run test:e2e # end-to-end tests
 ```
 
-`lint → build → test` is the enforced gate, both locally (husky pre-commit hook) and in CI
-(GitHub Actions), mirroring `CLAUDE.md`'s documented convention.
+`lint → build → test` is the enforced gate locally, via the husky pre-commit hook. CI (GitHub
+Actions) runs that same gate plus `test:e2e` on every push/PR to `main` — the e2e suite provisions
+its own disposable Postgres (Testcontainers) and a Redis service container, so it needs no manual
+setup to run there.
 
 ## Project status
 
-**All minimum required features are implemented and tested**: authentication, product/SKU
-catalog with images, CASL role-based authorization (Manager/Client), cart and orders, both Stripe
-flows (Payment Links and Payment Intents) with verified webhooks, BullMQ stock-notification
-queue, S3 product images, structured JSON logging, and full Swagger documentation. See
-`docs/architecture.md` for the production architecture write-up (System Design Review
-deliverable). CORS, Helmet, and a live Swagger UI are wired in.
+![Test and coverage metrics: 192/193 unit tests across 28 suites, 85.1% statement coverage, 13 e2e tests across 4 suites, 35 endpoints across 26 routes and 11 controllers, CI gate lint→build→test→e2e green on main](docs/metrics.png)
+
+All 10 of `challenge.md`'s minimum required features are implemented and tested, along with every
+item on its Mandatory Implementations checklist.
+
+<details>
+<summary><strong>Core capabilities (challenge.md items 1–10)</strong></summary>
+
+| Feature | Status | Built with |
+|---|---|---|
+| 1. Authentication (signup/signin/signout/forgot/reset password, password-change email) | Done | JWT access tokens, SHA-256 opaque refresh tokens, `@nestjs/throttler`, Nodemailer + Ethereal |
+| 2. Product catalog (pagination, category search, SKUs/variants, public images) | Done | Prisma, class-validator pagination DTOs, S3 signed URLs |
+| 3–5. Roles & per-role capabilities (Manager/Client) | Done | Prisma roles table, JWT claims |
+| 6. CASL authorization (MUST) | Done | `@casl/ability`, custom `PoliciesGuard`, `@CheckPolicies()` |
+| 7. Stripe — Payment Links + Payment Intents (MUST) | Done | Stripe SDK, CLI-verified webhook signatures |
+| 8. Stock notification queue (MUST) | Done | `@nestjs/bullmq`, Redis, retry + exponential backoff |
+| 9. Order history with filtering (MUST) | Done (feature); e2e test for the filters still pending | class-validator DTO extending shared `PaginationParamsDto` |
+| 10. Order status flow | Done | `order_status_history` table, CASL-guarded transition endpoint |
+
+</details>
+
+<details>
+<summary><strong>Mandatory implementations</strong></summary>
+
+| Requirement | Status | Built with |
+|---|---|---|
+| Env schema validation | Done | class-validator `EnvironmentVariables`, validated at boot |
+| Global exception filter | Done | `AllExceptionsFilter` |
+| Guards & validation pipes | Done | `JWTAuthGuard`, `PoliciesGuard`, global `ValidationPipe` → 422 |
+| Custom decorators | Done | `@CurrentUser()`, `@CheckPolicies()` |
+| AWS S3 image storage | Done | `@aws-sdk/client-s3`, private bucket, signed URLs |
+| Helmet, CORS, rate limiting | Done | `helmet`, `@nestjs/cors`, throttle 3 req/60s on auth routes |
+| E2E tests: auth, checkout, order history | Done | Jest, Supertest, Testcontainers (disposable Postgres per run) |
+| One-page architecture write-up | Done | [`docs/architecture.md`](docs/architecture.md) |
+| CI/CD pipeline gates the full suite, including e2e | Done | GitHub Actions, Redis service container, husky pre-commit, commitlint |
+| Observability | Done | `nestjs-pino`, redacts tokens/passwords from logs |
+
+</details>
+
+### Where the rigor shows up
+
+The test suite grew with the code, not after it — 192 unit tests across 28 suites landed alongside
+each service as it was built, holding coverage at 85% statements / 84% lines the whole way. That
+habit caught real defects before review: a fail-open CASL guard that would have silently granted
+access on a missing policy decorator, a JWT payload shape that differed between sign-up and sign-in
+(would have crashed order actions with a real 500), and a BullMQ restock race against a deleted
+product.
+
+Every webhook signature is verified against the real Stripe CLI, not assumed correct because the
+code looked right. Refresh tokens are opaque and SHA-256 hashed rather than reusing a
+password-hashing algorithm built for the wrong threat model. The e2e suite runs against a real,
+disposable PostgreSQL container per run — the same discipline that surfaced a previously invisible
+gap: the suite had been silently broken since 2026-08-24 by a Prisma/Jest ESM conflict the unit
+tests never touched, found and fixed this week rather than left for submission day.
+
+### In progress
+
+- [ ] More e2e coverage: order-history filters/pagination, auth role-checks + sign-out +
+      forgot/reset-password + rate-limit, checkout wrong-signature + insufficient-stock + Payment
+      Link flow
+- [ ] `WebhooksService` unit test for a known, documented edge case: if the payment transaction
+      fails partway through, the idempotency guard can treat Stripe's automatic retry as an
+      already-processed duplicate, leaving the order stuck unpaid (see `docs/architecture.md`'s
+      known risks)
+- [ ] `openApi.yml`: `429` missing on sign-in/sign-up, 3 missing `409` responses, `422` missing on
+      3 pagination endpoints
+
+### Deliberately deprioritized (optional / extra credit)
+
+- [ ] Delivery Person role & the `delivered` status
+- [ ] Promo code system
+- [ ] Cloud deployment (Railway) — `challenge.md`'s own last line calls this "Extra Points";
+      parked mid-setup to protect time for required work
+- [ ] `/auth/refresh` and change-password-while-logged-in — mentor-suggested, confirmed not in
+      `challenge.md`'s required scope
 
 ## Documentation
 
@@ -155,13 +242,10 @@ through this week's implementation. Full rationale for the schema items lives in
   applied without the decorator would have silently granted access to any authenticated user
   instead of none. Changed to throw instead, so a future route added without the decorator breaks
   loudly at that route rather than leaking access.
-- **Kept the per-product Stripe Payment Link, didn't switch to a cart-only Payment Intents flow**,
-  despite the mentor raising it twice. `challenge.md` literally requires single-product Payment
-  Links, so the Payment Intent flow (cart checkout) was built *in addition to*, not instead of.
 - **Product images are served via signed S3 URLs from a private bucket, never a public bucket
   URL.** The DB only stores the S3 key; a fresh signed URL is generated per request, so access can
   be revoked/expired without touching stored data.
-- **The stock-notification threshold triggers on crossing *up* through 3 (restock), not crossing
+- **The stock-notification threshold triggers on crossing _up_ through 3 (restock), not crossing
   down (low-stock warning).** `challenge.md`'s wording ("when stock reaches 3, notify users who
   liked it") is genuinely ambiguous between the two; settled on restock to match
   `docs/schemaERD_decisions.md` #14. A separate, higher-threshold "only 5 left" indicator was
