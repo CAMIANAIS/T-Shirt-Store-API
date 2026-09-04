@@ -507,13 +507,14 @@ components:
       properties:
         status:
           type: string
+          description: >-
+            Only these two transitions are accepted via this endpoint
+            (paid -> processing -> shipped). Cancellation has its own
+            dedicated endpoint (POST /orders/{orderId}/cancel); pending/paid/
+            delivered are never valid input here, only output states.
           enum:
-            - pending
-            - paid
             - processing
             - shipped
-            - cancelled
-            - delivered
           example: 'processing'
     OrderStatusHistory:
       required:
@@ -868,7 +869,7 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Category'
-        '400':
+        '422':
           description: Invalid pagination parameters
           content:
             application/json:
@@ -935,7 +936,7 @@ paths:
                   'type': 'array',
                   'items': { '$ref': '#/components/schemas/Product' },
                 }
-        '400':
+        '422':
           description: Invalid category or pagination parameters
           content:
             application/json:
@@ -1065,6 +1066,12 @@ paths:
                 $ref: '#/components/schemas/Error'
         '404':
           description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Invalid pagination parameters
           content:
             application/json:
               schema:
@@ -1291,6 +1298,12 @@ paths:
                 $ref: '#/components/schemas/Error'
         '404':
           description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Invalid pagination parameters
           content:
             application/json:
               schema:
@@ -1960,7 +1973,7 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Order'
-        '400':
+        '422':
           description: Invalid filter parameters
           content:
             application/json:
@@ -2134,7 +2147,7 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Order'
-        '400':
+        '422':
           description: Invalid filter parameters
           content:
             application/json:

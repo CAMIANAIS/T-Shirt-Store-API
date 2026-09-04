@@ -156,3 +156,34 @@
 
 
 
+
+
+---
+
+## 5. Full Audit vs Real Code (2026-09-04)
+
+A full pass comparing every documented path/method in `openApi.yml` against the real controllers, using this doc's own status-code table as ground truth.
+
+### Systemic: spec says 400, code returns 422, for query-param validation
+`main.ts`'s global `ValidationPipe` throws `UnprocessableEntityException` (422) for every DTO validation failure (confirmed live). Several `GET` endpoints still document `400: Invalid ... parameters` for pagination/filter query params — stale, predates the pagination-DTO work:
+- `GET /categories`, `GET /products`, `GET /orders`, `GET /me/orders` — documented `400`, actually `422`.
+- `GET /products/{productId}/variants`, `GET /products/{productId}/images`, `GET /orders/{orderId}/status-history` — take `limit`/`offset` via a validated DTO now, but have no validation-error response documented at all.
+
+### Categories — entire CRUD undocumented
+`POST /categories`, `PATCH /categories/:categoryId`, `DELETE /categories/:categoryId` are implemented (manager-only, CASL-guarded) but not in the spec at all — only `GET /categories` exists there.
+
+### Users — entire resource undocumented
+`GET /users`, `GET /users/:userId`, `DELETE /users/:userId` are implemented but nowhere in the spec.
+
+### Auth — missing 429 on 2 endpoints
+`/auth/signin` and `/auth/signup` are rate-limited in code (`@Throttle`, 3/60s), same as `/auth/forgotpassword`/`/auth/resetpassword` — but only the latter two document a `429` response.
+
+### Missing 409s (code documents/throws them, spec doesn't)
+- `POST /products/{productId}/paymentLink`
+- `POST /products/{productId}/images`
+- `PATCH /products/{productId}/variants/{productVariantId}` (SKU-change collision)
+
+### Real contract mismatch, not just a missing doc
+`OrderStatusInput`'s schema lists the full status enum (`pending, paid, processing, shipped, cancelled, delivered`) as valid PATCH input for `/orders/{orderId}/status`. The real `UpdateOrderStatusDto` only accepts `['processing', 'shipped']` — matching the endpoint's own stated "legal transitions only" rule. A client reading the spec would reasonably expect other values to be accepted.
+
+**Not covered by this pass**: full required/optional field-by-field check on every schema; live verification of what an invalid path param (e.g. `GET /products/abc`) actually returns (no explicit `ParseIntPipe` on most `@Param` id fields — worth checking whether that's a 400 or an unhandled 500).
