@@ -1225,6 +1225,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '409':
+          description: The updated SKU collides with an existing productVariant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '422':
           description: Validation exception
           content:
@@ -1362,6 +1368,12 @@ paths:
                 $ref: '#/components/schemas/Error'
         '404':
           description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Product already has the maximum number of images
           content:
             application/json:
               schema:
@@ -1617,6 +1629,12 @@ paths:
                 $ref: '#/components/schemas/Error'
         '404':
           description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Product must have exactly one variant to create a payment link
           content:
             application/json:
               schema:
@@ -2302,6 +2320,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '422':
+          description: Invalid pagination parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         'default':
           description: Unexpected error
           content:
@@ -2571,6 +2595,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '429':
+          description: Too many signup attempts, rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         'default':
           description: Unexpected error
           content:
@@ -2621,6 +2651,12 @@ paths:
                 $ref: '#/components/schemas/Error'
         '422':
           description: Validation exception
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Too many signin attempts, rate limit exceeded
           content:
             application/json:
               schema:
