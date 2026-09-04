@@ -58,9 +58,22 @@ or invalid.
   minutes).
 - `PORT` (number): port the server listens on. Min `1`, max `65535`. Example: `3000`.
 - `NODE_ENV` (string): e.g. `development`, `test`, `production`.
+- `STRIPE_SECRET_KEY` (string): Stripe secret key, must match `sk_test_...` or `sk_live_...`.
+- `STRIPE_WEBHOOK_SECRET` (string): signing secret for the `/webhooks/stripe` endpoint, must match
+  `whsec_...`. Locally, `stripe listen` prints a temporary one; a deployed environment needs a
+  permanent one from a Dashboard-registered webhook endpoint instead.
+- `EMAIL_HOST` (string), `EMAIL_PORT` (number), `EMAIL_USER` (email), `EMAIL_PASSWORD` (string),
+  `EMAIL_FROM` (string): SMTP config for password-reset/change and stock-notification emails.
+  [Ethereal](https://ethereal.email) works for a disposable dev inbox.
+- `AWS_ACCESS_KEY_ID` (string): must match `AKIA...`. `AWS_SECRET_ACCESS_KEY` (string),
+  `AWS_REGION` (string), `AWS_S3_BUCKET_NAME` (string): for product image uploads (private bucket,
+  signed URLs).
+- `REDIS_URL` (string): must be `redis://...` or `rediss://...` (TLS — needed for a managed
+  provider like Upstash). Backs the BullMQ stock-notification queue.
 
-See `.env.example` for the full list of required variables, including Stripe, email, AWS S3, and
-Redis — all validated at boot by `src/config/environment.ts`.
+Every variable above is required — the app refuses to boot if any is missing or fails its format
+check, even ones a given request path doesn't touch. See `.env.example` for a ready-to-copy
+template.
 
 Build the database from `docs/schemaERD.sql` (idempotent, safe to re-run), then generate the
 Prisma client:
