@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { BullModule } from '@nestjs/bullmq';
+import { LoggerModule } from 'nestjs-pino';
 import Redis from 'ioredis';
 import { AppController } from './app.controller';
 import { EnvironmentVariables } from './config/environment';
@@ -26,6 +27,32 @@ import { EmailModule } from './email/email.module';
     ConfigModule.forRoot({
       isGlobal: true,
       validate: validateConfig,
+    }),
+    LoggerModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (
+        configService: ConfigService<EnvironmentVariables, true>,
+      ) => {
+        const isProduction =
+          configService.get('NODE_ENV', { infer: true }) === 'production';
+        return {
+          pinoHttp: {
+            level: isProduction ? 'info' : 'debug',
+            transport: isProduction
+              ? undefined
+              : { target: 'pino-pretty', options: { singleLine: true } },
+            redact: {
+              paths: [
+                'req.headers.authorization',
+                'req.headers.cookie',
+                'req.body.password',
+                'req.body.newPassword',
+              ],
+              censor: '[REDACTED]',
+            },
+          },
+        };
+      },
     }),
     BullModule.forRootAsync({
       inject: [ConfigService],

@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { HttpAdapterHost } from '@nestjs/core';
 import { Response } from 'express';
+import { Logger } from 'nestjs-pino';
 
 interface HttpExceptionBody {
   message?: string;
@@ -15,7 +16,10 @@ interface HttpExceptionBody {
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
-  constructor(private readonly httpAdapterHost: HttpAdapterHost) {}
+  constructor(
+    private readonly httpAdapterHost: HttpAdapterHost,
+    private readonly logger: Logger,
+  ) {}
 
   catch(exception: unknown, host: ArgumentsHost) {
     const { httpAdapter } = this.httpAdapterHost;
@@ -42,7 +46,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       message = 'Internal server error';
       error = undefined;
 
-      console.error('Unhandled exception:', exception);
+      this.logger.error(exception, 'Unhandled exception');
     }
     const responseBody = { statusCode, message, error };
     httpAdapter.reply(response, responseBody, statusCode);

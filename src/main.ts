@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
+import { Logger } from 'nestjs-pino';
 
 function flattenValidationErrors(errors: ValidationError[]): string[] {
   return errors.flatMap((error) =>
@@ -17,7 +18,11 @@ function flattenValidationErrors(errors: ValidationError[]): string[] {
 }
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, { rawBody: true });
+  const app = await NestFactory.create(AppModule, {
+    rawBody: true,
+    bufferLogs: true,
+  });
+  app.useLogger(app.get(Logger));
   // Without this, SIGTERM/SIGINT never trigger onModuleDestroy/onApplicationShutdown,
   // so PrismaService never disconnects and BullMQ's worker.close() never runs —
   // in-flight jobs get killed mid-run instead of finishing.
