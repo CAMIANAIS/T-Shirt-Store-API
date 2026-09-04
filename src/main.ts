@@ -18,6 +18,10 @@ function flattenValidationErrors(errors: ValidationError[]): string[] {
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { rawBody: true });
+  // Without this, SIGTERM/SIGINT never trigger onModuleDestroy/onApplicationShutdown,
+  // so PrismaService never disconnects and BullMQ's worker.close() never runs —
+  // in-flight jobs get killed mid-run instead of finishing.
+  app.enableShutdownHooks();
   // Known gap, deliberately deferred: no origin restriction (allows '*') since no
   // frontend origin exists yet to restrict it to. Revisit once one does.
   app.enableCors();
