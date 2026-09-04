@@ -82,6 +82,6 @@ export class EnvironmentVariables {
   AWS_S3_BUCKET_NAME: string;
 
   @IsString()
-  @Matches(/^redis:\/\//)
+  @Matches(/^rediss?:\/\//)
   REDIS_URL: string;
 }
