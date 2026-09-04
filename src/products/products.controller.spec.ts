@@ -48,7 +48,11 @@ describe('ProductsController', () => {
       .mockResolvedValue(mockProducts as any);
 
     // Act
-    const result = await controller.findAll(5, 10, 20);
+    const result = await controller.findAll({
+      categoryId: 5,
+      limit: 10,
+      offset: 20,
+    });
 
     // Assert — your turn. Was findAll called with (5, 10, 20)? Does the
     // controller return exactly what the service returned?

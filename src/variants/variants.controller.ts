@@ -21,6 +21,7 @@ import { VariantsService } from './variants.service';
 import { ProductVariantInputDto } from './dto/createProductVariant.dto';
 import { ProductVariantUpdateInputDto } from './dto/updateProductVariant.dto';
 import { ProductVariantDto } from './dto/productVariant.dto';
+import { PaginationParamsDto } from '../common/dto/pagination.dto';
 import { JWTAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PoliciesGuard } from '../casl/policies.guard';
 import { AppAbility } from '../casl/casl-ability.factory';
@@ -41,8 +42,7 @@ export class VariantsController {
   @Get()
   findByProductId(
     @Param('productId') productId: number,
-    @Query('limit') limit?: number,
-    @Query('offset') offset?: number,
+    @Query() { limit, offset }: PaginationParamsDto,
   ) {
     return this.variantsService.findByProductId(productId, limit, offset);
   }

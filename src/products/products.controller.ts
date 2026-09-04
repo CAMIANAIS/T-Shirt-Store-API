@@ -34,6 +34,8 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { CreateProductImageDto, ProductImageDto } from './dto/productImage.dto';
 import { ProductDto, PaymentLinkResultDto } from './dto/product.dto';
 import { ErrorDto } from '../common/dto/error.dto';
+import { PaginationParamsDto } from '../common/dto/pagination.dto';
+import { ProductListParamsDto } from './dto/productListParams.dto';
 interface JwtPayload {
   sub: number;
 }
@@ -49,11 +51,7 @@ export class ProductsController {
   @ApiResponse({ status: 200, type: [ProductDto] })
   @HttpCode(HttpStatus.OK)
   @Get()
-  findAll(
-    @Query('categoryId') categoryId: number,
-    @Query('limit') limit: number,
-    @Query('offset') offset: number,
-  ) {
+  findAll(@Query() { categoryId, limit, offset }: ProductListParamsDto) {
     return this.productService.findAll(categoryId, limit, offset);
   }
 
@@ -190,8 +188,7 @@ export class ProductsController {
   @Get(':productId/images')
   findImages(
     @Param('productId') productId: number,
-    @Query('limit') limit: number,
-    @Query('offset') offset: number,
+    @Query() { limit, offset }: PaginationParamsDto,
   ) {
     return this.productService.findImages(productId, limit, offset);
   }

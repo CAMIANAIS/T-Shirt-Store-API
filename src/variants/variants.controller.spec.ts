@@ -44,7 +44,10 @@ describe('VariantsController', () => {
       .mockResolvedValue(mockVariants as any);
 
     // Act
-    const result = await controller.findByProductId(5, 10, 0);
+    const result = await controller.findByProductId(5, {
+      limit: 10,
+      offset: 0,
+    });
 
     // Assert — your turn. Was findByProductId called with (5, 10, 0)? Does
     // the controller return exactly what the service returned?

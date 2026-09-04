@@ -24,6 +24,7 @@ import { CategoriesService, Category } from './categories.service';
 import { CategoryDto } from './dto/category.dto';
 import { CreateCategoryDto } from './dto/createCategory.dto';
 import { UpdateCategoryDto } from './dto/updateCategory.dto';
+import { PaginationParamsDto } from '../common/dto/pagination.dto';
 import { JWTAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PoliciesGuard } from '../casl/policies.guard';
 import { CheckPolicies } from '../casl/policies.decorator';
@@ -41,8 +42,7 @@ export class CategoriesController {
   @ApiResponse({ status: 200, type: [CategoryDto] })
   @Get()
   async findAll(
-    @Query('limit') limit: number,
-    @Query('offset') offset: number,
+    @Query() { limit, offset }: PaginationParamsDto,
     @Res({ passthrough: true }) res: Response,
   ): Promise<Category[]> {
     const { categories, total } = await this.categoriesService.findAll(

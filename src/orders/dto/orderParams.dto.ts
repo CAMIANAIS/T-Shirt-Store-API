@@ -7,8 +7,9 @@ import {
   IsString,
   Min,
 } from 'class-validator';
+import { PaginationParamsDto } from '../../common/dto/pagination.dto';
 
-export class OrderParamsDto {
+export class OrderParamsDto extends PaginationParamsDto {
   @IsOptional()
   @IsDateString()
   fromDate?: string;
@@ -32,14 +33,4 @@ export class OrderParamsDto {
   @IsNumber()
   @Min(0)
   maxAmount?: number;
-
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  limit?: number;
-
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  offset?: number;
 }

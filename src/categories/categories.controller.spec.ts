@@ -47,7 +47,7 @@ describe('CategoriesController', () => {
     const mockRes = { set: setSpy } as any;
 
     // Act
-    const result = await controller.findAll(20, 0, mockRes);
+    const result = await controller.findAll({ limit: 20, offset: 0 }, mockRes);
 
     // Assert — your turn. Was findAll called with (20, 0)? Does result
     // equal mockCategories? Was res.set called with
