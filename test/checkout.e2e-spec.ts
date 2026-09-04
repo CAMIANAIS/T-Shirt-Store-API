@@ -127,4 +127,91 @@ describe('Checkout (e2e)', () => {
     expect(Number(payment.amount)).toBe(product.price * 2);
     expect(payment.status).toBe('completed');
   });
+
+  it('a duplicate webhook delivery does not double-decrement stock or double-charge', async () => {
+    // Arrange — same checkout flow as above: client, product, cart, order, payment intent
+    const client = await createUserFixture(prisma, 'client');
+    const product = await createProductFixture(prisma, {
+      stockQuantity: 5,
+      price: 2000,
+    });
+    const token = await signIn(client.email, client.password);
+
+    await request(app.getHttpServer())
+      .post('/carts/items')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ productVariantId: product.productVariantId, quantity: 2 });
+
+    const orderResponse = await request(app.getHttpServer())
+      .post('/orders')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        shippingAddress: {
+          street1: '123 Test St',
+          street2: 'Unit 1',
+          city: 'Testville',
+          postalCode: '00000',
+          state: 'TS',
+          country: 'USA',
+        },
+      });
+    const orderId: number = orderResponse.body.id;
+
+    const paymentResponse = await request(app.getHttpServer())
+      .post(`/orders/${orderId}/payment`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ paymentMethod: 'card' });
+    const intentId: string = paymentResponse.body.intentId;
+
+    const fakeEvent = {
+      id: `evt_test_${orderId}_${Date.now()}`,
+      type: 'payment_intent.succeeded',
+      data: {
+        object: {
+          id: intentId,
+          metadata: { orderId: String(orderId) },
+        },
+      },
+    };
+    const payload = JSON.stringify(fakeEvent);
+    const signature = stripeService.webhooks.generateTestHeaderString({
+      payload,
+      secret: webhookSecret,
+    });
+
+    // Act — Stripe delivers the SAME event twice. This happens for real:
+    // Stripe retries on a timeout/5xx even when your handler actually
+    // succeeded, so the handler has to treat a repeat delivery as a no-op.
+    const firstResponse = await request(app.getHttpServer())
+      .post('/webhooks/stripe')
+      .set('Content-Type', 'application/json')
+      .set('Stripe-Signature', signature)
+      .send(payload);
+
+    const secondResponse = await request(app.getHttpServer())
+      .post('/webhooks/stripe')
+      .set('Content-Type', 'application/json')
+      .set('Stripe-Signature', signature)
+      .send(payload);
+
+    const variantAfterBoth = await prisma.product_variants.findUnique({
+      where: { product_variant_id: product.productVariantId },
+    });
+    const paymentsForOrder = await prisma.payments.findMany({
+      where: { order_id: orderId },
+    });
+
+    // Assert — your turn. Both requests should come back successfully (a
+    // duplicate isn't an error). The real question: did the SECOND delivery
+    // decrement stock again? Should `variantAfterBoth.stock_quantity` be 3
+    // (decremented once, correct) or 1 (decremented twice, bug)? And should
+    // `paymentsForOrder` have exactly one row, or two?
+    expect(firstResponse.status).toBe(200);
+    expect(secondResponse.status).toBe(200);
+
+    expect(variantAfterBoth?.stock_quantity).toBe(3);
+
+    expect(paymentsForOrder).toHaveLength(1);
+    expect(paymentsForOrder[0].status).toBe('completed');
+  });
 });
