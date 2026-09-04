@@ -10,6 +10,16 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DATABASE_URL: postgresql://user:password@localhost:5432/ci_placeholder
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v4
         with:
@@ -24,3 +34,25 @@ jobs:
       - run: npm run lint
       - run: npm run build
       - run: npm run test
+      - name: End-to-end tests
+        env:
+          # A disposable Postgres for this suite comes from Testcontainers
+          # itself (test/setup/global-setup.ts) — DATABASE_URL above is
+          # overwritten at runtime, this block never touches it.
+          JWT_SECRET: ci-only-placeholder-secret-at-least-32-characters-long
+          JWT_EXPIRATION: 3600
+          PORT: 3000
+          NODE_ENV: test
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+          EMAIL_HOST: smtp.ethereal.email
+          EMAIL_PORT: 587
+          EMAIL_USER: ci-placeholder@example.com
+          EMAIL_PASSWORD: ci-only-placeholder
+          EMAIL_FROM: no-reply@example.com
+          AWS_ACCESS_KEY_ID: AKIACIPLACEHOLDERKEY0
+          AWS_SECRET_ACCESS_KEY: ci-only-placeholder
+          AWS_REGION: us-east-1
+          AWS_S3_BUCKET_NAME: ci-placeholder-bucket
+          REDIS_URL: redis://localhost:6379
+        run: npm run test:e2e
