@@ -148,6 +148,33 @@ through this week's implementation. Full rationale for the schema items lives in
   email-verification infra this app doesn't have, so it's mitigated with rate limiting on
   `/auth/signup` instead.
 
+**Queue, logging & deploy (Week 4)**
+
+- **BullMQ retry/backoff (3 attempts, exponential, 5s base delay)** on the stock-notification job.
+  A transient SMTP or S3 failure shouldn't permanently drop a restock email, but unbounded retries
+  could mask a real, ongoing outage — 3 attempts was chosen as "survive a blip, don't hide a
+  systemic failure."
+- **`nestjs-pino` over Winston** for structured logging: native NestJS integration, JSON in
+  production/pretty-printed in dev, and `Authorization`/`Cookie` headers plus password fields are
+  redacted by default rather than opt-in, since logs are a common place for secrets to leak by
+  accident.
+- **A shared `PaginationParamsDto`** (limit clamped 0–50, matching `docs/openApi.yml`'s already-
+  documented `maximum: 50`) replaces duplicating the same two fields across 5 DTOs. Found after
+  discovering 4 list endpoints had no validation on `limit` at all, despite the contract
+  documenting a max for all of them.
+- **Prisma client generation stays on the `prisma-client` generator.** Briefly swapped to the
+  classic `prisma-client-js` to unblock the local e2e/BullMQ Jest conflict, but that broke 5
+  services whose imports depend on `prisma-client`-specific generated type files — reverted, and
+  fixed the real gap instead: a `postinstall` script (`prisma generate`) so any host regenerates
+  the client automatically, since `generated/prisma/` is gitignored and nothing else did.
+- **Deployed database is a separate Redis provider (Upstash), not Railway's own Redis add-on** —
+  Railway's free plan caps the number of services per project. Required loosening `REDIS_URL`'s
+  validator to accept `rediss://` (TLS) as well as `redis://`, since `ioredis` only auto-enables
+  TLS based on that exact URL scheme.
+- **`docs/architecture.md`'s diagrams show target production architecture (AWS-shaped), not what's
+  actually deployed (Railway).** That gap is called out directly on the diagrams themselves
+  (observability/monitoring boxes marked planned-not-implemented) rather than left implicit.
+
 **Architecture (System Design Review)**
 
 - **BullMQ over RabbitMQ/Kafka.** It runs on the Redis already in the stack; the condition that
