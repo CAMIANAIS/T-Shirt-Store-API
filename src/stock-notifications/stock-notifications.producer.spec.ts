@@ -34,7 +34,11 @@ describe('StockNotificationsProducer', () => {
       await service.notifyRestock(1);
 
       // Assert — TODO: check mockAdd was called with 'restock' and { productId: 1 }.
-      expect(mockAdd).toHaveBeenCalledWith('restock', { productId: 1 });
+      expect(mockAdd).toHaveBeenCalledWith(
+        'restock',
+        { productId: 1 },
+        expect.anything(),
+      );
     });
   });
 });

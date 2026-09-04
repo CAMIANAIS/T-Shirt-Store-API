@@ -13,6 +13,13 @@ export class StockNotificationsProducer {
   ) {}
 
   async notifyRestock(productId: number): Promise<void> {
-    await this.queue.add('restock', { productId });
+    await this.queue.add(
+      'restock',
+      { productId },
+      {
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 5000 },
+      },
+    );
   }
 }
