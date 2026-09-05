@@ -13,6 +13,7 @@ describe('WebhooksService', () => {
   // Minimal fake transaction client — only the calls handleEvent
   // actually makes inside $transaction.
   const mockTx = {
+    stripe_events: { create: jest.fn() },
     order_status_history: { create: jest.fn() },
     orders: { update: jest.fn(), findUnique: jest.fn(), create: jest.fn() },
     product_variants: { update: jest.fn(), findUnique: jest.fn() },
@@ -49,14 +50,17 @@ describe('WebhooksService', () => {
     expect(service).toBeDefined();
   });
 
-  it('returns early on a duplicate event without touching the transaction or cart', async () => {
-    // Arrange
+  it('rolls back and returns on a duplicate event, without clearing the cart or marking it processed', async () => {
+    // Arrange — the idempotency check now lives inside $transaction, so a
+    // duplicate still opens (and immediately rolls back) a transaction —
+    // that part changed on purpose. What must NOT happen either way: the
+    // cart isn't cleared, and the event isn't (re-)marked processed.
     const duplicateError = new Prisma.PrismaClientKnownRequestError(
       'Unique constraint failed',
       { code: 'P2002', clientVersion: '7.9.1' },
     );
     jest
-      .spyOn(prismaService.stripe_events, 'create')
+      .spyOn(mockTx.stripe_events, 'create')
       .mockRejectedValue(duplicateError);
     const transactionSpy = jest.spyOn(prismaService, '$transaction');
     const clearCartSpy = jest.spyOn(cartsService, 'clearCart');
@@ -69,18 +73,17 @@ describe('WebhooksService', () => {
     // Act
     await service.handleEvent(event);
 
-    // Assert — your turn. Was `$transaction` never called? Was
-    // `clearCart` never called? Was `stripe_events.update` never called?
-    expect(transactionSpy).not.toHaveBeenCalled();
+    // Assert — your turn. Was `$transaction` called exactly once (it
+    // opens, then rolls back on the duplicate)? Was `clearCart` never
+    // called? Was `stripe_events.update` never called?
+    expect(transactionSpy).toHaveBeenCalledTimes(1);
     expect(clearCartSpy).not.toHaveBeenCalled();
     expect(updateSpy).not.toHaveBeenCalled();
   });
 
   it('marks the order paid, decrements stock, and clears the cart on payment_intent.succeeded', async () => {
     // Arrange
-    jest
-      .spyOn(prismaService.stripe_events, 'create')
-      .mockResolvedValue({} as any);
+    jest.spyOn(mockTx.stripe_events, 'create').mockResolvedValue({} as any);
     mockTx.orders.findUnique.mockResolvedValue({
       order_id: 1,
       user_id: 7,
@@ -128,9 +131,7 @@ describe('WebhooksService', () => {
 
   it('does nothing extra and still marks the event processed for an event type it does not handle', async () => {
     // Arrange
-    jest
-      .spyOn(prismaService.stripe_events, 'create')
-      .mockResolvedValue({} as any);
+    jest.spyOn(mockTx.stripe_events, 'create').mockResolvedValue({} as any);
     const clearCartSpy = jest.spyOn(cartsService, 'clearCart');
     const updateEventSpy = jest.spyOn(prismaService.stripe_events, 'update');
     const event = { id: 'evt_3', type: 'charge.succeeded' } as Stripe.Event;
@@ -150,9 +151,7 @@ describe('WebhooksService', () => {
 
   it('creates a paid order and decrements stock on checkout.session.completed', async () => {
     // Arrange
-    jest
-      .spyOn(prismaService.stripe_events, 'create')
-      .mockResolvedValue({} as any);
+    jest.spyOn(mockTx.stripe_events, 'create').mockResolvedValue({} as any);
     mockTx.product_variants.findUnique.mockResolvedValue({
       product_variant_id: 5,
       stock_quantity: 3,
@@ -215,5 +214,55 @@ describe('WebhooksService', () => {
       where: { stripe_event_id: 'evt_4' },
       data: { status: 'processed', processed_at: expect.any(Date) },
     });
+  });
+
+  it('does not silently drop a payment when the transaction fails partway, then Stripe retries', async () => {
+    // Arrange — first delivery: $transaction itself fails partway through
+    // (e.g. a transient DB error) — matching the known risk documented in
+    // architecture.md. Mocking $transaction directly (rather than making
+    // one call inside it reject) means the real callback, and therefore
+    // mockTx.stripe_events.create, is never actually invoked this first
+    // time — which is fine, since what we're proving is what happens on
+    // the SECOND delivery, not simulating exactly which line failed.
+    const transactionSpy = jest
+      .spyOn(prismaService, '$transaction')
+      .mockRejectedValueOnce(new Error('simulated transient DB failure'));
+    const event = {
+      id: 'evt_retry',
+      type: 'payment_intent.succeeded',
+      data: { object: { metadata: { orderId: '1' } } },
+    } as unknown as Stripe.Event;
+
+    // Act — first delivery fails partway through
+    await expect(service.handleEvent(event)).rejects.toThrow(
+      'simulated transient DB failure',
+    );
+
+    // Arrange — Stripe's automatic retry: same event. This time
+    // $transaction falls back to its real (mockTx) implementation from
+    // beforeEach, so the callback actually runs and reaches
+    // mockTx.stripe_events.create for real — mock that one call as the
+    // unique-constraint hit, simulating that the "seen" row from attempt 1
+    // is still there (even though attempt 1 never really touched mockTx,
+    // the row existing is a DB-side fact, not something we need to
+    // literally re-derive from the mock's call history).
+    const duplicateError = new Prisma.PrismaClientKnownRequestError(
+      'Unique constraint failed',
+      { code: 'P2002', clientVersion: '7.9.1' },
+    );
+    jest
+      .spyOn(mockTx.stripe_events, 'create')
+      .mockRejectedValueOnce(duplicateError);
+
+    // Act — the retry
+    await service.handleEvent(event);
+
+    // Assert — your turn. This is the known bug: the retry should have
+    // actually completed the payment, since it never really succeeded the
+    // first time. Did it? Check how many times `transactionSpy` was
+    // called in total, across BOTH deliveries — once (bug: the retry
+    // never reprocessed, order stays stuck unpaid) or twice (fixed: the
+    // retry redid the real work)?
+    expect(transactionSpy).toHaveBeenCalledTimes(2);
   });
 });

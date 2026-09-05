@@ -41,11 +41,12 @@
   200), and order history (asserts cross-client isolation — one client can't see another's
   orders) are covered end to end, running against a real Postgres via Testcontainers rather than
   mocks.
-- Named regression that would reach production unnoticed today: the Stripe webhook idempotency
-  guard (`stripe_events`, unique on `stripe_event_id`) inserts its row _before_ the payment
-  transaction runs, and only marks it `processed` at the end. If that transaction throws partway
-  (a transient DB error), the row is still there marked "seen." Stripe automatically retries a
-  failed webhook delivery, but the retry hits that same row, is treated as a duplicate, and does
-  nothing — the order is silently stuck unpaid forever. No test exercises "webhook processing
-  fails once, then Stripe retries," so this would only surface as a real customer's order never
-  clearing.
+- Regression this same section used to flag as unfixed, now closed: the Stripe webhook
+  idempotency guard used to insert its "seen" row _before_ the payment transaction ran, so a
+  transaction failing partway left that row behind permanently — Stripe's automatic retry would
+  then hit it, treat the event as a duplicate, and silently do nothing, leaving the order stuck
+  unpaid forever. Fixed by moving the "seen" insert to be the first statement _inside_ the same
+  transaction as the real payment work, so the marker and the effect it guards now succeed or
+  fail together. Covered by a unit test (`webhooks.service.spec.ts`) that fails a transaction
+  once, retries the same event, and asserts the retry actually redoes the work rather than being
+  swallowed — verified against a real Postgres too via `checkout.e2e-spec.ts`.

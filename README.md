@@ -16,9 +16,9 @@ Deployed on Railway: **[t-shirt-store-api-production.up.railway.app/api](https:/
 
 Seeded with a small demo catalog (1 category, 3 products with variants) and one account per role:
 
-| Role | Email | Password |
-|---|---|---|
-| Client | `demo.client@tshirtstore.dev` | `DemoClient!2026` |
+| Role    | Email                          | Password           |
+| ------- | ------------------------------ | ------------------ |
+| Client  | `demo.client@tshirtstore.dev`  | `DemoClient!2026`  |
 | Manager | `demo.manager@tshirtstore.dev` | `DemoManager!2026` |
 
 Sign in via `POST /auth/signin` in Swagger, then click **Authorize** with the returned
@@ -112,38 +112,38 @@ item on its Mandatory Implementations checklist.
 <details>
 <summary><strong>Core capabilities (challenge.md items 1–10)</strong></summary>
 
-| Feature | Status | Built with |
-|---|---|---|
-| 1. Authentication (signup/signin/signout/forgot/reset password, password-change email) | Done | JWT access tokens, SHA-256 opaque refresh tokens, `@nestjs/throttler`, Nodemailer + Ethereal |
-| 2. Product catalog (pagination, category search, SKUs/variants, public images) | Done | Prisma, class-validator pagination DTOs, S3 signed URLs |
-| 3–5. Roles & per-role capabilities (Manager/Client) | Done | Prisma roles table, JWT claims |
-| 6. CASL authorization (MUST) | Done | `@casl/ability`, custom `PoliciesGuard`, `@CheckPolicies()` |
-| 7. Stripe — Payment Links + Payment Intents (MUST) | Done | Stripe SDK, CLI-verified webhook signatures |
-| 8. Stock notification queue (MUST) | Done | `@nestjs/bullmq`, Redis, retry + exponential backoff |
-| 9. Order history with filtering (MUST) | Done (feature); e2e test for the filters still pending | class-validator DTO extending shared `PaginationParamsDto` |
-| 10. Order status flow | Done | `order_status_history` table, CASL-guarded transition endpoint |
+| Feature                                                                                | Status                                                 | Built with                                                                                   |
+| -------------------------------------------------------------------------------------- | ------------------------------------------------------ | -------------------------------------------------------------------------------------------- |
+| 1. Authentication (signup/signin/signout/forgot/reset password, password-change email) | Done                                                   | JWT access tokens, SHA-256 opaque refresh tokens, `@nestjs/throttler`, Nodemailer + Ethereal |
+| 2. Product catalog (pagination, category search, SKUs/variants, public images)         | Done                                                   | Prisma, class-validator pagination DTOs, S3 signed URLs                                      |
+| 3–5. Roles & per-role capabilities (Manager/Client)                                    | Done                                                   | Prisma roles table, JWT claims                                                               |
+| 6. CASL authorization (MUST)                                                           | Done                                                   | `@casl/ability`, custom `PoliciesGuard`, `@CheckPolicies()`                                  |
+| 7. Stripe — Payment Links + Payment Intents (MUST)                                     | Done                                                   | Stripe SDK, CLI-verified webhook signatures                                                  |
+| 8. Stock notification queue (MUST)                                                     | Done                                                   | `@nestjs/bullmq`, Redis, retry + exponential backoff                                         |
+| 9. Order history with filtering (MUST)                                                 | Done (feature); e2e test for the filters still pending | class-validator DTO extending shared `PaginationParamsDto`                                   |
+| 10. Order status flow                                                                  | Done                                                   | `order_status_history` table, CASL-guarded transition endpoint                               |
 
 </details>
 
 <details>
 <summary><strong>Mandatory implementations</strong></summary>
 
-| Requirement | Status | Built with |
-|---|---|---|
-| Env schema validation | Done | class-validator `EnvironmentVariables`, validated at boot |
-| Global exception filter | Done | `AllExceptionsFilter` |
-| Guards & validation pipes | Done | `JWTAuthGuard`, `PoliciesGuard`, global `ValidationPipe` → 422 |
-| Custom decorators | Done | `@CurrentUser()`, `@CheckPolicies()` |
-| AWS S3 image storage | Done | `@aws-sdk/client-s3`, private bucket, signed URLs |
-| Helmet, CORS, rate limiting | Done | `helmet`, `@nestjs/cors`, throttle 3 req/60s on auth routes |
-| E2E tests: auth, checkout, order history | Done | Jest, Supertest, Testcontainers (disposable Postgres per run) |
-| One-page architecture write-up | Done | [`docs/architecture.md`](docs/architecture.md) |
-| CI/CD pipeline gates the full suite, including e2e | Done | GitHub Actions, Redis service container, husky pre-commit, commitlint |
-| Observability | Done | `nestjs-pino`, redacts tokens/passwords from logs |
+| Requirement                                        | Status | Built with                                                            |
+| -------------------------------------------------- | ------ | --------------------------------------------------------------------- |
+| Env schema validation                              | Done   | class-validator `EnvironmentVariables`, validated at boot             |
+| Global exception filter                            | Done   | `AllExceptionsFilter`                                                 |
+| Guards & validation pipes                          | Done   | `JWTAuthGuard`, `PoliciesGuard`, global `ValidationPipe` → 422        |
+| Custom decorators                                  | Done   | `@CurrentUser()`, `@CheckPolicies()`                                  |
+| AWS S3 image storage                               | Done   | `@aws-sdk/client-s3`, private bucket, signed URLs                     |
+| Helmet, CORS, rate limiting                        | Done   | `helmet`, `@nestjs/cors`, throttle 3 req/60s on auth routes           |
+| E2E tests: auth, checkout, order history           | Done   | Jest, Supertest, Testcontainers (disposable Postgres per run)         |
+| One-page architecture write-up                     | Done   | [`docs/architecture.md`](docs/architecture.md)                        |
+| CI/CD pipeline gates the full suite, including e2e | Done   | GitHub Actions, Redis service container, husky pre-commit, commitlint |
+| Observability                                      | Done   | `nestjs-pino`, redacts tokens/passwords from logs                     |
 
 </details>
 
-### Where the rigor shows up
+### What I can prove
 
 The test suite grew with the code, not after it — 192 unit tests across 28 suites landed alongside
 each service as it was built, holding coverage at 85% statements / 84% lines the whole way. That
@@ -164,19 +164,11 @@ tests never touched, found and fixed this week rather than left for submission d
 - [ ] More e2e coverage: order-history filters/pagination, auth role-checks + sign-out +
       forgot/reset-password + rate-limit, checkout wrong-signature + insufficient-stock + Payment
       Link flow
-- [ ] `WebhooksService` unit test for a known, documented edge case: if the payment transaction
-      fails partway through, the idempotency guard can treat Stripe's automatic retry as an
-      already-processed duplicate, leaving the order stuck unpaid (see `docs/architecture.md`'s
-      known risks)
-- [ ] `openApi.yml`: `429` missing on sign-in/sign-up, 3 missing `409` responses, `422` missing on
-      3 pagination endpoints
 
 ### Deliberately deprioritized (optional / extra credit)
 
 - [ ] Delivery Person role & the `delivered` status
 - [ ] Promo code system
-- [ ] Cloud deployment (Railway) — `challenge.md`'s own last line calls this "Extra Points";
-      parked mid-setup to protect time for required work
 - [ ] `/auth/refresh` and change-password-while-logged-in — mentor-suggested, confirmed not in
       `challenge.md`'s required scope
 
