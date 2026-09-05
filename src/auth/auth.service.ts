@@ -187,6 +187,18 @@ export class AuthService {
       },
       data: { password_hash: password_hash },
     });
+
+    // If the password was compromised, any existing session using the old
+    // password should be kicked out too, not just the reset token itself.
+    await this.prismaService.auth_tokens.updateMany({
+      where: {
+        user_id: resetToken.user_id,
+        type: 'refresh',
+        revoked: false,
+      },
+      data: { revoked: true },
+    });
+
     await this.emailService.sendEmail(
       updateUser.email,
       'Your password was changed',

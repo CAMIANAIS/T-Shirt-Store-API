@@ -47,8 +47,8 @@ jobs:
           STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
           EMAIL_HOST: smtp.ethereal.email
           EMAIL_PORT: 587
-          EMAIL_USER: ci-placeholder@example.com
-          EMAIL_PASSWORD: ci-only-placeholder
+          EMAIL_USER: ${{ secrets.EMAIL_USER }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
           EMAIL_FROM: no-reply@example.com
           AWS_ACCESS_KEY_ID: AKIACIPLACEHOLDERKEY0
           AWS_SECRET_ACCESS_KEY: ci-only-placeholder

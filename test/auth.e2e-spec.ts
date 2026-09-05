@@ -182,7 +182,7 @@ describe('Authentication (e2e)', () => {
     expect(tokenRow?.revoked).toBe(true);
   });
 
-  it('resets the password with a real token, but leaves other sessions live (known gap)', async () => {
+  it('resets the password with a real token, and revokes other active sessions', async () => {
     // Arrange — a fresh user with a refresh token from signup, standing
     // in for "another device/session still logged in" when the password
     // gets reset.
@@ -227,14 +227,12 @@ describe('Authentication (e2e)', () => {
 
     // Assert — your turn. Did the reset respond 200? Did the password
     // really change (`passwordActuallyChanged`)? Is the OTHER session's
-    // refresh token (`otherRefreshRow.revoked`) still `false`? (This part
-    // is the known, documented gap in CLAUDE.md — resetPassword only
-    // revokes the one reset token it used, not the user's other active
-    // sessions. This assertion should describe what the code does today,
-    // not what you wish it did.)
+    // refresh token (`otherRefreshRow.revoked`) now `true` — resetPassword
+    // should revoke every other active session too, not just the one
+    // reset token it used?
     expect(resetResponse.status).toBe(200);
     expect(passwordActuallyChanged).toBe(true);
-    expect(otherRefreshRow?.revoked).toBe(false);
+    expect(otherRefreshRow?.revoked).toBe(true);
   });
 
   it('rate-limits repeated forgot-password requests', async () => {

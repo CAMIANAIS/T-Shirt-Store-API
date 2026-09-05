@@ -173,9 +173,9 @@ accepts a valid token and rejects a missing or malformed one; **a Client hitting
 route is refused (`403`)** — CASL enforcement proven against a real request, not just mocked;
 **sign-out actually revokes the refresh token row in the database**, not just returns `200`;
 password reset works end to end against a real token (read from the real Ethereal email, since
-only its hash is ever stored) — and the same test honestly documents a known, accepted gap: it
-does **not** revoke the user's other active sessions; forgot-password is genuinely rate-limited
-(a 4th rapid attempt gets `429`, not just configured to look that way).
+only its hash is ever stored) and **revokes every other active session for that user**, not just
+the one reset token used; forgot-password is genuinely rate-limited (a 4th rapid attempt gets
+`429`, not just configured to look that way).
 
 **Checkout** — cart → order → Payment Intent → webhook → paid order with decremented stock and a
 real payment row; a duplicate webhook delivery is a safe no-op (replay protection actually holds,
@@ -192,9 +192,6 @@ only one of the two conditions.
 
 ### Known gaps, honestly documented
 
-- **Password reset doesn't revoke the user's other active sessions.** Accepted, not hidden — proven
-  by `resets the password with a real token, but leaves other sessions live (known gap)` in
-  `auth.e2e-spec.ts`, not just claimed in prose.
 - **Order-history filtering is tested for status + price range together, not the date-range
   filter specifically** — same underlying DTO/query, lower risk, but not independently proven yet.
 - Categories/Users CRUD (extra features, not in `challenge.md`'s required scope) aren't documented

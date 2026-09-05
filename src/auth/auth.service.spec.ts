@@ -37,6 +37,7 @@ describe('AuthService', () => {
               create: jest.fn(),
               findFirst: jest.fn(),
               update: jest.fn(),
+              updateMany: jest.fn(),
             },
             users: {
               update: jest.fn(),
@@ -291,6 +292,9 @@ describe('AuthService', () => {
     const updateTokenSpy = jest
       .spyOn(prismaService.auth_tokens, 'update')
       .mockResolvedValue({} as Prisma.auth_tokensModel);
+    const revokeOtherSessionsSpy = jest
+      .spyOn(prismaService.auth_tokens, 'updateMany')
+      .mockResolvedValue({ count: 2 });
     const sendEmailSpy = jest
       .spyOn(emailService, 'sendEmail')
       .mockResolvedValue(undefined);
@@ -308,6 +312,15 @@ describe('AuthService', () => {
       where: {
         token_hash: expect.any(String), // hashed version of 'some-reset-token'
         user_id: mockResetToken.user_id,
+      },
+      data: { revoked: true },
+    });
+
+    expect(revokeOtherSessionsSpy).toHaveBeenCalledWith({
+      where: {
+        user_id: mockResetToken.user_id,
+        type: 'refresh',
+        revoked: false,
       },
       data: { revoked: true },
     });
