@@ -46,6 +46,9 @@ one needs.
 
 ## Environment Variables
 
+<details>
+<summary><strong>Full list</strong></summary>
+
 Validated at startup by `src/config/environment.ts`; the app refuses to boot if any are missing
 or invalid.
 
@@ -70,6 +73,8 @@ or invalid.
   signed URLs).
 - `REDIS_URL` (string): must be `redis://...` or `rediss://...` (TLS — needed for a managed
   provider like Upstash). Backs the BullMQ stock-notification queue.
+
+</details>
 
 Every variable above is required — the app refuses to boot if any is missing or fails its format
 check, even ones a given request path doesn't touch. See `.env.example` for a ready-to-copy
@@ -115,16 +120,16 @@ item on its Mandatory Implementations checklist.
 <details>
 <summary><strong>Core capabilities (challenge.md items 1–10)</strong></summary>
 
-| Feature                                                                                | Status                                                 | Built with                                                                                   |
-| -------------------------------------------------------------------------------------- | ------------------------------------------------------ | -------------------------------------------------------------------------------------------- |
-| 1. Authentication (signup/signin/signout/forgot/reset password, password-change email) | Done                                                   | JWT access tokens, SHA-256 opaque refresh tokens, `@nestjs/throttler`, Nodemailer + Ethereal |
-| 2. Product catalog (pagination, category search, SKUs/variants, public images)         | Done                                                   | Prisma, class-validator pagination DTOs, S3 signed URLs                                      |
-| 3–5. Roles & per-role capabilities (Manager/Client)                                    | Done                                                   | Prisma roles table, JWT claims                                                               |
-| 6. CASL authorization (MUST)                                                           | Done                                                   | `@casl/ability`, custom `PoliciesGuard`, `@CheckPolicies()`                                  |
-| 7. Stripe — Payment Links + Payment Intents (MUST)                                     | Done                                                   | Stripe SDK, CLI-verified webhook signatures                                                  |
-| 8. Stock notification queue (MUST)                                                     | Done                                                   | `@nestjs/bullmq`, Redis, retry + exponential backoff                                         |
-| 9. Order history with filtering (MUST)                                                 | Done                                                   | class-validator DTO extending shared `PaginationParamsDto`                                   |
-| 10. Order status flow                                                                  | Done                                                   | `order_status_history` table, CASL-guarded transition endpoint                               |
+| Feature                                                                                | Status | Built with                                                                                   |
+| -------------------------------------------------------------------------------------- | ------ | -------------------------------------------------------------------------------------------- |
+| 1. Authentication (signup/signin/signout/forgot/reset password, password-change email) | Done   | JWT access tokens, SHA-256 opaque refresh tokens, `@nestjs/throttler`, Nodemailer + Ethereal |
+| 2. Product catalog (pagination, category search, SKUs/variants, public images)         | Done   | Prisma, class-validator pagination DTOs, S3 signed URLs                                      |
+| 3–5. Roles & per-role capabilities (Manager/Client)                                    | Done   | Prisma roles table, JWT claims                                                               |
+| 6. CASL authorization (MUST)                                                           | Done   | `@casl/ability`, custom `PoliciesGuard`, `@CheckPolicies()`                                  |
+| 7. Stripe — Payment Links + Payment Intents (MUST)                                     | Done   | Stripe SDK, CLI-verified webhook signatures                                                  |
+| 8. Stock notification queue (MUST)                                                     | Done   | `@nestjs/bullmq`, Redis, retry + exponential backoff                                         |
+| 9. Order history with filtering (MUST)                                                 | Done   | class-validator DTO extending shared `PaginationParamsDto`                                   |
+| 10. Order status flow                                                                  | Done   | `order_status_history` table, CASL-guarded transition endpoint                               |
 
 </details>
 
@@ -187,7 +192,7 @@ the one reset token used; forgot-password is genuinely rate-limited (a 4th rapid
 
 **Checkout** — cart → order → Payment Intent → webhook → paid order with decremented stock and a
 real payment row; a duplicate webhook delivery is a safe no-op (replay protection actually holds,
-not assumed); the Payment Link flow — a separate code path where the order is created *inside* the
+not assumed); the Payment Link flow — a separate code path where the order is created _inside_ the
 webhook handler itself — proven end to end, the one part of checkout that had zero coverage before
 this week; a Payment Intent is refused (`409`) if stock runs out between order creation and
 payment, with no payment row created; a webhook with an invalid signature is rejected (`400`) and
@@ -196,12 +201,11 @@ leaves the order and stock completely untouched.
 **Order history** — a client's history includes only their own orders; a direct request for
 another client's order is refused (`403`); a manager sees every client's orders; filtering by
 status **and** price range together returns exactly the matching set, excluding orders that match
-only one of the two conditions.
+only one of the two conditions; filtering by date range excludes an order created outside the
+requested window.
 
 ### Known gaps, honestly documented
 
-- **Order-history filtering is tested for status + price range together, not the date-range
-  filter specifically** — same underlying DTO/query, lower risk, but not independently proven yet.
 - Categories/Users CRUD (extra features, not in `challenge.md`'s required scope) aren't documented
   in `docs/openApi.yml` — deliberate, lower priority than everything above.
 
@@ -211,6 +215,42 @@ only one of the two conditions.
 - [ ] Promo code system
 - [ ] `/auth/refresh` and change-password-while-logged-in — mentor-suggested, confirmed not in
       `challenge.md`'s required scope
+
+### What I'd do with more time
+
+None of this is in `challenge.md`'s required or optional scope — ideas parked for after
+submission, split into what moves the business/user experience forward and what closes the gap
+between the deployed app and the production architecture already designed in
+`docs/architecture.md`.
+
+**Business & user-facing:**
+
+- **Birthday loyalty email.** Reuse `EmailService` and the `birthdate` already collected at
+  signup to send a small "happy birthday" touch — a customer-retention nudge, not a required
+  feature. Needs a scheduled (cron-style) job checking for today's birthdays, a different trigger
+  shape than the event-driven restock queue.
+- **A low-stock "only 5 left" signal**, separate from the restock alert. Deliberately decided as
+  a passive on-page indicator rather than another email blast, at a higher threshold than the
+  restock alert's 3 — the same "100 likers, 3 units" fairness problem that shaped the restock
+  design applies here too, so an email variant needs the same scrutiny before building it.
+- **A reusable per-user address book** — save an address once, reuse it across orders, set a
+  default — instead of re-entering shipping details at every checkout. `Order_Addresses` already
+  snapshots the address at order time for immutability, so this sits on top of that, not instead
+  of it.
+- Finish the two optional features already scoped above (Delivery Person role, Promo codes) —
+  realistic next picks since both reuse patterns already in the codebase (CASL + status-history
+  for delivery, the existing Payment Intent total calculation for promo discounts).
+
+**Closing the gap to the production architecture:**
+
+- Split the API and the BullMQ worker into separate deployable units on Railway — currently one
+  process. Matches `docs/architecture.md`'s own deploy-shape decision and lets the worker scale
+  independently of request traffic.
+- PgBouncer for connection pooling, once past the ~10-replica mark `docs/architecture.md` already
+  names as the point per-instance limiting stops being enough.
+- Watch BullMQ's failed-job set. A stock-notification job that exhausts its 3 retries currently
+  just sits unrequeued in Redis with nothing watching it — a real observability gap
+  `docs/architecture.md` already names as unsolved, not a new idea.
 
 ## Documentation
 

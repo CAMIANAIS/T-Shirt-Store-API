@@ -161,4 +161,53 @@ describe('Order history (e2e)', () => {
     expect(orderIds).not.toContain(pendingOrder.orderId);
     expect(orderIds).not.toContain(tooExpensivePaidOrder.orderId);
   });
+
+  it("filters a client's order history by date range", async () => {
+    // Arrange — one client, one product, two orders: one recent, one
+    // deliberately backdated outside the query range. createOrderFixture
+    // doesn't take a created_at override, so it's set directly afterward.
+    const client = await createUserFixture(prisma, 'client');
+    const product = await createProductFixture(prisma);
+
+    const recentOrder = await createOrderFixture(
+      prisma,
+      client.userId,
+      product.productVariantId,
+    );
+    const oldOrder = await createOrderFixture(
+      prisma,
+      client.userId,
+      product.productVariantId,
+    );
+
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    await prisma.orders.update({
+      where: { order_id: oldOrder.orderId },
+      data: { created_at: thirtyDaysAgo },
+    });
+
+    const token = await signIn(client.email, client.password);
+
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    // Act — only orders created within the last 7 days should come back
+    const response = await request(app.getHttpServer())
+      .get('/me/orders')
+      .query({
+        fromDate: sevenDaysAgo.toISOString(),
+        toDate: new Date().toISOString(),
+      })
+      .set('Authorization', `Bearer ${token}`);
+
+    // Assert — your turn. Status 200? Does the response body contain
+    // recentOrder.orderId? Does it exclude oldOrder.orderId (created 30
+    // days ago, outside the fromDate/toDate range)?
+    expect(response.status).toBe(200);
+
+    const orderIds = response.body.map((o) => o.id);
+    expect(orderIds).toContain(recentOrder.orderId);
+    expect(orderIds).not.toContain(oldOrder.orderId);
+  });
 });
