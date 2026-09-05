@@ -115,4 +115,50 @@ describe('Order history (e2e)', () => {
     expect(orderIds).toContain(orderA.orderId);
     expect(orderIds).toContain(orderB.orderId);
   });
+
+  it("filters a client's order history by status and price range together", async () => {
+    // Arrange — one client, one product, three orders with different
+    // statuses and totals (total_amount = priceAtPurchase * quantity)
+    const client = await createUserFixture(prisma, 'client');
+    const product = await createProductFixture(prisma);
+
+    const pendingOrder = await createOrderFixture(
+      prisma,
+      client.userId,
+      product.productVariantId,
+      { priceAtPurchase: 1000, quantity: 1, status: 'pending' },
+    );
+    const matchingPaidOrder = await createOrderFixture(
+      prisma,
+      client.userId,
+      product.productVariantId,
+      { priceAtPurchase: 5000, quantity: 1, status: 'paid' },
+    );
+    const tooExpensivePaidOrder = await createOrderFixture(
+      prisma,
+      client.userId,
+      product.productVariantId,
+      { priceAtPurchase: 9000, quantity: 1, status: 'paid' },
+    );
+
+    const token = await signIn(client.email, client.password);
+
+    // Act — only orders that are BOTH status=paid AND within
+    // [minAmount, maxAmount] should come back
+    const response = await request(app.getHttpServer())
+      .get('/me/orders')
+      .query({ status: 'paid', minAmount: 4000, maxAmount: 6000 })
+      .set('Authorization', `Bearer ${token}`);
+
+    // Assert — your turn. Status 200? Does the response body contain
+    // matchingPaidOrder.orderId? Does it exclude pendingOrder.orderId
+    // (wrong status) AND tooExpensivePaidOrder.orderId (right status,
+    // amount outside the range)?
+    expect(response.status).toBe(200);
+
+    const orderIds = response.body.map((o) => o.id);
+    expect(orderIds).toContain(matchingPaidOrder.orderId);
+    expect(orderIds).not.toContain(pendingOrder.orderId);
+    expect(orderIds).not.toContain(tooExpensivePaidOrder.orderId);
+  });
 });

@@ -294,4 +294,132 @@ describe('Checkout (e2e)', () => {
       order.order_status_history[order.order_status_history.length - 1].status,
     ).toBe('paid');
   });
+
+  it('refuses to create a Payment Intent once stock ran out after the order was placed', async () => {
+    // Arrange — order created normally while stock was sufficient
+    const client = await createUserFixture(prisma, 'client');
+    const product = await createProductFixture(prisma, {
+      stockQuantity: 5,
+      price: 2000,
+    });
+    const token = await signIn(client.email, client.password);
+
+    await request(app.getHttpServer())
+      .post('/carts/items')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ productVariantId: product.productVariantId, quantity: 2 });
+
+    const orderResponse = await request(app.getHttpServer())
+      .post('/orders')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        shippingAddress: {
+          street1: '123 Test St',
+          street2: 'Unit 1',
+          city: 'Testville',
+          postalCode: '00000',
+          state: 'TS',
+          country: 'USA',
+        },
+      });
+    const orderId: number = orderResponse.body.id;
+
+    // Simulate stock running out between order creation and payment --
+    // e.g. another concurrent checkout took the remaining units.
+    await prisma.product_variants.update({
+      where: { product_variant_id: product.productVariantId },
+      data: { stock_quantity: 1 },
+    });
+
+    // Act — try to create the Payment Intent now that stock is insufficient
+    const paymentResponse = await request(app.getHttpServer())
+      .post(`/orders/${orderId}/payment`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ paymentMethod: 'card' });
+
+    const paymentRow = await prisma.payments.findFirst({
+      where: { order_id: orderId },
+    });
+
+    // Assert — your turn. What status code does createPayment throw when
+    // stock is insufficient (check orders.service.ts's ConflictException
+    // for this case)? Did a payments row NOT get created (`paymentRow`
+    // should be null)?
+    expect(paymentResponse.status).toBe(409);
+    expect(paymentRow).toBeNull();
+  });
+
+  it('rejects a webhook with an invalid signature and leaves the order untouched', async () => {
+    // Arrange — a normal order + Payment Intent, so there's a real order
+    // whose status we can check stays unchanged
+    const client = await createUserFixture(prisma, 'client');
+    const product = await createProductFixture(prisma, {
+      stockQuantity: 5,
+      price: 2000,
+    });
+    const token = await signIn(client.email, client.password);
+
+    await request(app.getHttpServer())
+      .post('/carts/items')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ productVariantId: product.productVariantId, quantity: 2 });
+
+    const orderResponse = await request(app.getHttpServer())
+      .post('/orders')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        shippingAddress: {
+          street1: '123 Test St',
+          street2: 'Unit 1',
+          city: 'Testville',
+          postalCode: '00000',
+          state: 'TS',
+          country: 'USA',
+        },
+      });
+    const orderId: number = orderResponse.body.id;
+
+    const paymentResponse = await request(app.getHttpServer())
+      .post(`/orders/${orderId}/payment`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ paymentMethod: 'card' });
+    const intentId: string = paymentResponse.body.intentId;
+
+    const fakeEvent = {
+      id: `evt_test_badsig_${orderId}_${Date.now()}`,
+      type: 'payment_intent.succeeded',
+      data: {
+        object: {
+          id: intentId,
+          metadata: { orderId: String(orderId) },
+        },
+      },
+    };
+    const payload = JSON.stringify(fakeEvent);
+
+    // Act — a completely bogus signature, not one signed with the real
+    // webhook secret
+    const webhookResponse = await request(app.getHttpServer())
+      .post('/webhooks/stripe')
+      .set('Content-Type', 'application/json')
+      .set('Stripe-Signature', 't=1,v1=not-a-real-signature')
+      .send(payload);
+
+    const updatedVariant = await prisma.product_variants.findUnique({
+      where: { product_variant_id: product.productVariantId },
+    });
+    const latestStatus = await prisma.order_status_history.findFirst({
+      where: { order_id: orderId },
+      orderBy: { created_at: 'desc' },
+    });
+
+    // Assert — your turn. What status code should an invalid signature
+    // get? Is `updatedVariant.stock_quantity` still 5 (untouched — stock
+    // only ever decrements on a SUCCESSFUL webhook, and the order itself
+    // never reserves/decrements stock at creation time)? Is
+    // `latestStatus.status` still `'pending'`, not `'paid'`?
+    expect(webhookResponse.status).toBe(400);
+    expect(updatedVariant?.stock_quantity).toBe(5);
+    expect(latestStatus?.status).toBe('pending');
+  });
 });
