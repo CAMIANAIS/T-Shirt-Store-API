@@ -214,4 +214,84 @@ describe('Checkout (e2e)', () => {
     expect(paymentsForOrder).toHaveLength(1);
     expect(paymentsForOrder[0].status).toBe('completed');
   });
+  //payment link workflow
+  it('walks a Payment Link through to a paid order with decremented stock', async () => {
+    // Arrange — a client, and a product with exactly one variant (payment
+    // links require this) and known starting stock/price
+    const client = await createUserFixture(prisma, 'client');
+    const product = await createProductFixture(prisma, {
+      stockQuantity: 5,
+      price: 3000,
+    });
+    const token = await signIn(client.email, client.password);
+
+    // Create the Payment Link — this hits real Stripe test mode, exactly
+    // like createPaymentLink does outside of tests.
+    await request(app.getHttpServer())
+      .post(`/products/${product.productId}/paymentLink`)
+      .set('Authorization', `Bearer ${token}`);
+
+    // Simulate Stripe delivering `checkout.session.completed` once a
+    // buyer actually pays through that link. Completing a real Payment
+    // Link checkout needs a browser and a test card — this instead builds
+    // and signs the exact event our own webhook handler reads, matching
+    // the metadata shape createPaymentLink actually sets (userId,
+    // productVariantId), which is the part this test is responsible for
+    // proving works.
+    const fakeEvent = {
+      id: `evt_test_link_${product.productId}_${Date.now()}`,
+      type: 'checkout.session.completed',
+      data: {
+        object: {
+          amount_total: 3000,
+          metadata: {
+            userId: String(client.userId),
+            productVariantId: String(product.productVariantId),
+          },
+        },
+      },
+    };
+    const payload = JSON.stringify(fakeEvent);
+    const signature = stripeService.webhooks.generateTestHeaderString({
+      payload,
+      secret: webhookSecret,
+    });
+
+    // Act
+    const webhookResponse = await request(app.getHttpServer())
+      .post('/webhooks/stripe')
+      .set('Content-Type', 'application/json')
+      .set('Stripe-Signature', signature)
+      .send(payload);
+
+    const updatedVariant = await prisma.product_variants.findUnique({
+      where: { product_variant_id: product.productVariantId },
+    });
+    const order = await prisma.orders.findFirst({
+      where: { user_id: client.userId, payment_method: 'payment_link' },
+      include: { order_items: true, order_status_history: true },
+    });
+
+    if (!updatedVariant || !order) {
+      throw new Error('expected fixture data missing');
+    }
+
+    // Assert — your turn. Did the webhook respond 200? Is
+    // `updatedVariant.stock_quantity` now 4 (5 - 1, Payment Links always
+    // buy quantity 1)? Does `order` have exactly one order_item, with
+    // `product_variant_id` matching `product.productVariantId` and
+    // `quantity` 1? Is its latest `order_status_history` entry `'paid'`?
+    expect(webhookResponse.status).toBe(200);
+    expect(updatedVariant.stock_quantity).toEqual(4);
+
+    expect(order.order_items).toHaveLength(1);
+    expect(order.order_items[0]).toMatchObject({
+      product_variant_id: product.productVariantId,
+      quantity: 1,
+    });
+
+    expect(
+      order.order_status_history[order.order_status_history.length - 1].status,
+    ).toBe('paid');
+  });
 });

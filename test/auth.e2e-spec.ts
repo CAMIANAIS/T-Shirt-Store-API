@@ -110,4 +110,35 @@ describe('Authentication (e2e)', () => {
     expect(response.status).toBe(401);
     expect(response.body.message).toContain('Invalid or expired token');
   });
+
+  it('rejects a client hitting a manager-only route', async () => {
+    // Arrange — a fresh user via signup (not signin — signin's own 3/60s
+    // throttle is already used up by earlier tests in this file; signup
+    // has its own separate bucket and returns an access_token directly).
+    // Every new signup is a plain client, never promoted to manager.
+    const signUpResponse = await request(app.getHttpServer())
+      .post('/auth/signup')
+      .send({
+        username: `casl-e2e-${Date.now()}`,
+        email: `casl-e2e-${Date.now()}@example.com`,
+        password: 'Password123!',
+      });
+    const token: string = signUpResponse.body.access_token;
+
+    // Act — POST /products requires ability.can('manage', 'Product'),
+    // manager-only per the CASL ability factory
+    const response = await request(app.getHttpServer())
+      .post('/products')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        name: 'Should Not Be Created',
+        description: 'a client should never be able to create this',
+        status: 'active',
+        categoryId: 1,
+      });
+
+    // Assert — your turn. What status code does PoliciesGuard return when
+    // the ability check fails?
+    expect(response.status).toBe(403);
+  });
 });
