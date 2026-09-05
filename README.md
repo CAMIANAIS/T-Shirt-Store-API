@@ -161,9 +161,8 @@ tests never touched, found and fixed this week rather than left for submission d
 
 ### In progress
 
-- [ ] More e2e coverage: order-history filters/pagination, auth role-checks + sign-out +
-      forgot/reset-password + rate-limit, checkout wrong-signature + insufficient-stock + Payment
-      Link flow
+- [ ] More e2e coverage: order-history filters/pagination, sign-out + forgot/reset-password +
+      rate-limit, checkout wrong-signature + insufficient-stock
 
 ### Deliberately deprioritized (optional / extra credit)
 
