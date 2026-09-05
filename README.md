@@ -106,6 +106,9 @@ setup to run there.
 
 ![Test and coverage metrics: 192/193 unit tests across 28 suites, 85.1% statement coverage, 13 e2e tests across 4 suites, 35 endpoints across 26 routes and 11 controllers, CI gate lint→build→test→e2e green on main](docs/metrics.png)
 
+_(screenshot slightly stale — e2e count has since grown to 21; see the case-by-case breakdown
+below for what's actually covered now)_
+
 All 10 of `challenge.md`'s minimum required features are implemented and tested, along with every
 item on its Mandatory Implementations checklist.
 
@@ -120,7 +123,7 @@ item on its Mandatory Implementations checklist.
 | 6. CASL authorization (MUST)                                                           | Done                                                   | `@casl/ability`, custom `PoliciesGuard`, `@CheckPolicies()`                                  |
 | 7. Stripe — Payment Links + Payment Intents (MUST)                                     | Done                                                   | Stripe SDK, CLI-verified webhook signatures                                                  |
 | 8. Stock notification queue (MUST)                                                     | Done                                                   | `@nestjs/bullmq`, Redis, retry + exponential backoff                                         |
-| 9. Order history with filtering (MUST)                                                 | Done (feature); e2e test for the filters still pending | class-validator DTO extending shared `PaginationParamsDto`                                   |
+| 9. Order history with filtering (MUST)                                                 | Done                                                   | class-validator DTO extending shared `PaginationParamsDto`                                   |
 | 10. Order status flow                                                                  | Done                                                   | `order_status_history` table, CASL-guarded transition endpoint                               |
 
 </details>
@@ -159,10 +162,43 @@ disposable PostgreSQL container per run — the same discipline that surfaced a 
 gap: the suite had been silently broken since 2026-08-24 by a Prisma/Jest ESM conflict the unit
 tests never touched, found and fixed this week rather than left for submission day.
 
-### In progress
+### E2E coverage — what's actually proven, case by case
 
-- [ ] More e2e coverage: order-history filters/pagination, sign-out + forgot/reset-password +
-      rate-limit, checkout wrong-signature + insufficient-stock
+21 e2e tests across 4 suites. Not just "a test with this name exists" — here's what each area
+proves against a real, running app and a real Postgres:
+
+**Authentication** — signup returns a token and never leaks `password_hash`; a duplicate email is
+rejected (`409`); signin succeeds/fails correctly on right/wrong credentials; a protected route
+accepts a valid token and rejects a missing or malformed one; **a Client hitting a Manager-only
+route is refused (`403`)** — CASL enforcement proven against a real request, not just mocked;
+**sign-out actually revokes the refresh token row in the database**, not just returns `200`;
+password reset works end to end against a real token (read from the real Ethereal email, since
+only its hash is ever stored) — and the same test honestly documents a known, accepted gap: it
+does **not** revoke the user's other active sessions; forgot-password is genuinely rate-limited
+(a 4th rapid attempt gets `429`, not just configured to look that way).
+
+**Checkout** — cart → order → Payment Intent → webhook → paid order with decremented stock and a
+real payment row; a duplicate webhook delivery is a safe no-op (replay protection actually holds,
+not assumed); the Payment Link flow — a separate code path where the order is created *inside* the
+webhook handler itself — proven end to end, the one part of checkout that had zero coverage before
+this week; a Payment Intent is refused (`409`) if stock runs out between order creation and
+payment, with no payment row created; a webhook with an invalid signature is rejected (`400`) and
+leaves the order and stock completely untouched.
+
+**Order history** — a client's history includes only their own orders; a direct request for
+another client's order is refused (`403`); a manager sees every client's orders; filtering by
+status **and** price range together returns exactly the matching set, excluding orders that match
+only one of the two conditions.
+
+### Known gaps, honestly documented
+
+- **Password reset doesn't revoke the user's other active sessions.** Accepted, not hidden — proven
+  by `resets the password with a real token, but leaves other sessions live (known gap)` in
+  `auth.e2e-spec.ts`, not just claimed in prose.
+- **Order-history filtering is tested for status + price range together, not the date-range
+  filter specifically** — same underlying DTO/query, lower risk, but not independently proven yet.
+- Categories/Users CRUD (extra features, not in `challenge.md`'s required scope) aren't documented
+  in `docs/openApi.yml` — deliberate, lower priority than everything above.
 
 ### Deliberately deprioritized (optional / extra credit)
 
