@@ -111,8 +111,7 @@ setup to run there.
 
 ![Test and coverage metrics: 192/193 unit tests across 28 suites, 85.1% statement coverage, 13 e2e tests across 4 suites, 35 endpoints across 26 routes and 11 controllers, CI gate lint→build→test→e2e green on main](docs/metrics.png)
 
-_(screenshot slightly stale — e2e count has since grown to 21; see the case-by-case breakdown
-below for what's actually covered now)_
+[Artifact: Evaluation from Claude of this project](https://claude.ai/code/artifact/af86583c-6718-4ace-aa87-15272dad8795?org=707706b2-0828-47eb-9f55-c38a34aebb92)
 
 All 10 of `challenge.md`'s minimum required features are implemented and tested, along with every
 item on its Mandatory Implementations checklist.
@@ -259,6 +258,7 @@ between the deployed app and the production architecture already designed in
 - [`docs/schemaERD_decisions.md`](docs/schemaERD_decisions.md): schema design decisions and rationale
 - [`docs/architecture.md`](docs/architecture.md): production architecture, queue choice, deploy
   shape, monitoring, and known risks
+- [Contract OpenApi week 2 in Swagger](https://portal.swaggerhub.com/apis/freelance-87b/t-shirt-store-openapi/1.0.0?source=catalog)
 
 ## Design process highlights
 
