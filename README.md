@@ -162,6 +162,14 @@ disposable PostgreSQL container per run — the same discipline that surfaced a 
 gap: the suite had been silently broken since 2026-08-24 by a Prisma/Jest ESM conflict the unit
 tests never touched, found and fixed this week rather than left for submission day.
 
+**`GUIDELINES3.md`'s own bar for "done with Claude on this block"** is a test that fails against
+generated CASL/Stripe code, fixed by changing the code, not the test. Met concretely: the Stripe
+webhook idempotency guard used to insert its "seen" row before the payment transaction ran, so a
+transaction failing partway left that row behind permanently, and Stripe's automatic retry got
+silently treated as a duplicate — the order stayed stuck unpaid forever. A unit test
+(`webhooks.service.spec.ts`) proved this against the real generated handler, and the fix was
+moving the insert inside the same transaction as the payment work, not weakening the assertion.
+
 ### E2E coverage — what's actually proven, case by case
 
 21 e2e tests across 4 suites. Not just "a test with this name exists" — here's what each area
