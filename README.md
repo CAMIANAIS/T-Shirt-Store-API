@@ -174,34 +174,38 @@ silently treated as a duplicate — the order stayed stuck unpaid forever. A uni
 (`webhooks.service.spec.ts`) proved this against the real generated handler, and the fix was
 moving the insert inside the same transaction as the payment work, not weakening the assertion.
 
-### E2E coverage — what's actually proven, case by case
+### E2E coverage, what's actually proven, case by case
 
 21 e2e tests across 4 suites. Not just "a test with this name exists" — here's what each area
 proves against a real, running app and a real Postgres:
 
-**Authentication** — signup returns a token and never leaks `password_hash`; a duplicate email is
-rejected (`409`); signin succeeds/fails correctly on right/wrong credentials; a protected route
-accepts a valid token and rejects a missing or malformed one; **a Client hitting a Manager-only
-route is refused (`403`)** — CASL enforcement proven against a real request, not just mocked;
-**sign-out actually revokes the refresh token row in the database**, not just returns `200`;
-password reset works end to end against a real token (read from the real Ethereal email, since
-only its hash is ever stored) and **revokes every other active session for that user**, not just
-the one reset token used; forgot-password is genuinely rate-limited (a 4th rapid attempt gets
-`429`, not just configured to look that way).
+**Authentication**
 
-**Checkout** — cart → order → Payment Intent → webhook → paid order with decremented stock and a
-real payment row; a duplicate webhook delivery is a safe no-op (replay protection actually holds,
-not assumed); the Payment Link flow — a separate code path where the order is created _inside_ the
-webhook handler itself — proven end to end, the one part of checkout that had zero coverage before
-this week; a Payment Intent is refused (`409`) if stock runs out between order creation and
-payment, with no payment row created; a webhook with an invalid signature is rejected (`400`) and
-leaves the order and stock completely untouched.
+- Signup returns a token and never leaks `password_hash`
+- A duplicate email is rejected (`409`); signin succeeds/fails correctly on right/wrong credentials; a protected route accepts a valid token and rejects a missing or malformed one;
+- **A Client hitting a Manager-only route is refused (`403`)** — CASL enforcement proven against a real request, not just mocked.
+- **sign-out actually revokes the refresh token row in the database**, not just returns `200`;
+- Password reset works end to end against a real token (read from the real Ethereal email, since only its hash is ever stored) and **revokes every other active session for that user**, not just the one reset token used
+- Forgot-password is genuinely rate-limited (a 4th rapid attempt gets
+  `429`).
 
-**Order history** — a client's history includes only their own orders; a direct request for
-another client's order is refused (`403`); a manager sees every client's orders; filtering by
-status **and** price range together returns exactly the matching set, excluding orders that match
-only one of the two conditions; filtering by date range excludes an order created outside the
-requested window.
+**Checkout**
+
+- Cart → order → Payment Intent → webhook → paid order with decremented stock and a
+  real payment row
+- A duplicate webhook delivery is a safe no-op (replay protection actually holds,
+  not assumed)
+- The Payment Link flow , a separate code path where the order is created _inside_ the webhook handler itself , proven end to end, the one part of checkout that had zero coverage before this week
+- A Payment Intent is refused (`409`) if stock runs out between order creation and
+  payment, with no payment row created; a webhook with an invalid signature is rejected (`400`) and
+  leaves the order and stock completely untouched.
+
+**Order history**
+
+- A client's history includes only their own orders; a direct request for
+  another client's order is refused (`403`)
+- A manager sees every client's orders; filtering by
+  status **and** price range together returns exactly the matching set, excluding orders that match only one of the two conditions; filtering by date range excludes an order created outside the requested window.
 
 ### Known gaps, honestly documented
 
