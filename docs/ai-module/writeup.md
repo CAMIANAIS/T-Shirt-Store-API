@@ -2,7 +2,7 @@
 
 **Repository / PR:** T-Shirt-Store-API, branch `ai-module/kebab-case-urls` — PR link: TODO
 **Starting commit:** `57062ba`
-**Improvement:** Make sure all URLs of endpoints are kebab-case — a decision the team took." Success criteria you gave: "all endpoints are kebab-case format; a new e2e test covers this case and it passes — checks all endpoints called, and if something still calls the old path, nothing responds
+**Improvement:** Normalize all API endpoint URLs to kebab-case, a naming decision the team made. Verified by a new e2e test that hits every renamed endpoint: the old path returns nothing (404), the new path responds correctly.
 
 ## Skills
 
@@ -33,3 +33,5 @@ After rename (GREEN — `npm run test:e2e`, 5 suites, 28/28 passing, including t
 ![after](../GREENLOG.png)
 
 Note: all mocked except the real Stripe test-mode webhook call.
+
+**Limitations:** Anything outside this repo that calls the old URLs (frontend, external API consumers) wasn't and couldn't be changed here — those teams need to be told about the new paths separately. Neither skill has been run in a fresh Claude Code session yet, only within this conversation, so "works without prior context" isn't verified.
