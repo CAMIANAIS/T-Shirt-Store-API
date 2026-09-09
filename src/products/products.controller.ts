@@ -172,7 +172,7 @@ export class ProductsController {
   @ApiResponse({ status: 409, type: ErrorDto })
   @HttpCode(HttpStatus.CREATED)
   @UseGuards(JWTAuthGuard)
-  @Post(':productId/paymentLink')
+  @Post(':productId/payment-link')
   createPaymentLink(
     @CurrentUser() userId: JwtPayload,
     @Param('productId') productId: number,

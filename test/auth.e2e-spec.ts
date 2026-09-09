@@ -27,7 +27,7 @@ describe('Authentication (e2e)', () => {
   it('registers a new user', async () => {
     // Act
     const response = await request(app.getHttpServer())
-      .post('/auth/signup')
+      .post('/auth/sign-up')
       .send(testUser);
 
     // Assert — your turn. What status code should a successful signup
@@ -46,7 +46,7 @@ describe('Authentication (e2e)', () => {
   it('rejects a duplicate signup with the same email', async () => {
     // Act — testUser was already registered in the previous test
     const response = await request(app.getHttpServer())
-      .post('/auth/signup')
+      .post('/auth/sign-up')
       .send(testUser);
 
     // Assert — your turn. What status code does `docs/openApi.yml`'s /
@@ -58,7 +58,7 @@ describe('Authentication (e2e)', () => {
   it('logs in with correct credentials and receives an access token', async () => {
     // Act
     const response = await request(app.getHttpServer())
-      .post('/auth/signin')
+      .post('/auth/sign-in')
       .send({ email: testUser.email, password: testUser.password });
 
     // Assert — your turn. Status code? Does the body have an
@@ -70,7 +70,7 @@ describe('Authentication (e2e)', () => {
   it('rejects sign-in with the wrong password', async () => {
     // Act
     const response = await request(app.getHttpServer())
-      .post('/auth/signin')
+      .post('/auth/sign-in')
       .send({ email: testUser.email, password: 'WrongPassword!' });
 
     // Assert — your turn. What status code for bad credentials?
@@ -81,7 +81,7 @@ describe('Authentication (e2e)', () => {
   it('allows a protected route with a valid token', async () => {
     // Arrange
     const signInResponse = await request(app.getHttpServer())
-      .post('/auth/signin')
+      .post('/auth/sign-in')
       .send({ email: testUser.email, password: testUser.password });
     const token: string = signInResponse.body.access_token;
 
@@ -122,7 +122,7 @@ describe('Authentication (e2e)', () => {
     // has its own separate bucket and returns an access_token directly).
     // Every new signup is a plain client, never promoted to manager.
     const signUpResponse = await request(app.getHttpServer())
-      .post('/auth/signup')
+      .post('/auth/sign-up')
       .send({
         username: `casl-e2e-${Date.now()}`,
         email: `casl-e2e-${Date.now()}@example.com`,
@@ -151,7 +151,7 @@ describe('Authentication (e2e)', () => {
     // Arrange — a fresh user via signup (own throttle bucket, and signup
     // already returns both tokens directly)
     const signUpResponse = await request(app.getHttpServer())
-      .post('/auth/signup')
+      .post('/auth/sign-up')
       .send({
         username: `signout-e2e-${Date.now()}`,
         email: `signout-e2e-${Date.now()}@example.com`,
@@ -162,7 +162,7 @@ describe('Authentication (e2e)', () => {
 
     // Act
     const signOutResponse = await request(app.getHttpServer())
-      .post('/auth/signout')
+      .post('/auth/sign-out')
       .set('Authorization', `Bearer ${accessToken}`)
       .send({ token: refreshToken });
 
@@ -188,7 +188,7 @@ describe('Authentication (e2e)', () => {
     // gets reset.
     const email = `reset-e2e-${Date.now()}@example.com`;
     await request(app.getHttpServer())
-      .post('/auth/signup')
+      .post('/auth/sign-up')
       .send({
         username: `reset-e2e-${Date.now()}`,
         email,
@@ -203,7 +203,7 @@ describe('Authentication (e2e)', () => {
     const sendEmailSpy = jest.spyOn(emailService, 'sendEmail');
 
     await request(app.getHttpServer())
-      .post('/auth/forgotpassword')
+      .post('/auth/forgot-password')
       .send({ email });
 
     const emailBody = sendEmailSpy.mock.calls[0][2];
@@ -211,7 +211,7 @@ describe('Authentication (e2e)', () => {
 
     // Act
     const resetResponse = await request(app.getHttpServer())
-      .post('/auth/resetpassword')
+      .post('/auth/reset-password')
       .send({ token: resetToken, newPassword: 'NewPassword123!' });
 
     const updatedUser = await prisma.users.findUniqueOrThrow({
@@ -248,7 +248,7 @@ describe('Authentication (e2e)', () => {
     const statuses: number[] = [];
     for (let i = 0; i < 6; i++) {
       const response = await request(throttledApp.getHttpServer())
-        .post('/auth/forgotpassword')
+        .post('/auth/forgot-password')
         .send({ email });
       statuses.push(response.status);
     }
