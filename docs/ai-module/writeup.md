@@ -82,12 +82,27 @@ After rename (GREEN — `npm run test:e2e`, 5 suites, 28/28 passing, including t
 
 Note: all mocked except the real Stripe test-mode webhook call.
 
-**Fresh-session verification (2026-09-10):** Both skills were re-run in a brand-new Claude Code session (no prior conversation) against the already-renamed codebase, to confirm each `SKILL.md` is self-contained and doesn't depend on context from the build conversation.
+**Fresh-session verification:** Both skills were re-run in a brand-new Claude Code session (no
+prior conversation), to confirm each `SKILL.md` is self-contained and doesn't depend on context
+from the build conversation.
 
-- `/consistency-kebab-url-endpoints` → ![fresh session: consistency skill](../consistency-kebab-url-endpoints.png)
-  Reported **0 violations** across all 11 controllers — correct, since the rename was already applied.
+- `/consistency-kebab-url-endpoints`, run **2026-09-16** against the **base commit** (`57062ba`
+  / `main`, before the rename, via a disposable `git worktree` — running it against the
+  already-renamed branch trivially finds 0 and proves nothing, which is what the first attempt
+  at this evidence did wrong):
+  ![fresh session, base commit: session start](../consistency-kebab-url-endpoints-base-commit-1-start.png)
+  ![fresh session, base commit: findings](../consistency-kebab-url-endpoints-base-commit-2-mid.png)
+  ![fresh session, base commit: exclusions + total](../consistency-kebab-url-endpoints-base-commit-3-end.png)
+  Reported **25 violations** — more than the 6 found in controllers alone, because the skill now
+  also scans Markdown and `docs/openApi.yml`, which at this pre-rename commit still had the old
+  paths too. It correctly excluded the historical log entry, plain-prose mentions with no
+  leading `/`, a service method name (`signIn`), and the gitignored `guidelines/` folder — every
+  exclusion rule we designed held up against a codebase state the skill had never seen before.
 - `/verify-kebab-rename-e2e` → ![fresh session: verify skill](../verify-kebab-rename-e2e.png)
-  **6/6** old→new endpoint pairs passed (old paths 404, new paths respond). Result: GREEN.
+  **Pending re-capture** — this screenshot shows a run that was interrupted ("stopped by the
+  user"), with no session banner visible, so it isn't valid evidence as-is. Needs a clean,
+  uninterrupted fresh-session run against the renamed branch, now asserting the exact expected
+  status per endpoint rather than "anything except 404."
 
 **Limitations:** Anything outside this repo that calls the old URLs (frontend, external API consumers) wasn't and couldn't be changed here, those teams need to be told about the new paths separately.
 
