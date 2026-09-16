@@ -98,11 +98,26 @@ from the build conversation.
   paths too. It correctly excluded the historical log entry, plain-prose mentions with no
   leading `/`, a service method name (`signIn`), and the gitignored `guidelines/` folder — every
   exclusion rule we designed held up against a codebase state the skill had never seen before.
-- `/verify-kebab-rename-e2e` → ![fresh session: verify skill](../verify-kebab-rename-e2e.png)
-  **Pending re-capture** — this screenshot shows a run that was interrupted ("stopped by the
-  user"), with no session banner visible, so it isn't valid evidence as-is. Needs a clean,
-  uninterrupted fresh-session run against the renamed branch, now asserting the exact expected
-  status per endpoint rather than "anything except 404."
+- `/verify-kebab-rename-e2e`, re-captured **2026-09-16** in the real repo (branch
+  `ai-module/kebab-case-urls`, not a worktree — this skill needs the renamed code plus a running
+  app):
+  ![fresh session: verify skill start](../verify-kebab-rename-e2e-1-start.png)
+  ![fresh session: verify skill result](../verify-kebab-rename-e2e-2-result.png)
+  **GREEN, 6/6** — each endpoint matched its exact expected status (`401` behind a guard for
+  `sign-out`/`payment-link`, `422` for the other four given an empty body), not just "not a
+  404." Along the way the session found leftover `jest` processes from the earlier interrupted
+  run still fighting over test resources — the actual cause of the original invalid screenshot —
+  killed them, and reran clean.
 
-**Limitations:** Anything outside this repo that calls the old URLs (frontend, external API consumers) wasn't and couldn't be changed here, those teams need to be told about the new paths separately.
+**Limitations:**
+
+- Anything outside this repo that calls the old URLs (frontend, external API consumers) wasn't
+  and couldn't be changed here — those teams need to be told about the new paths separately.
+- The verify skill's fresh-session run surfaced an **unfixed, separate issue**: even on a clean
+  run, `test/kebab-rename.e2e-spec.ts` (or a shared resource it touches) leaves an open handle —
+  Jest doesn't exit on its own after the assertions pass, and the process has to be killed. This
+  is likely what caused the original interrupted-run screenshot in the first place. Out of scope
+  for this PR (found during evidence capture, not part of the reviewed change) — flagging it here
+  rather than expanding scope, given the assignment's 2-day budget is already spent on review
+  fixes. Worth a `--detectOpenHandles` pass before the next fresh-session capture of this skill.
 

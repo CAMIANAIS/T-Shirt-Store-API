@@ -13,7 +13,7 @@ describe('Kebab-case URL rename (e2e)', () => {
     await app.close();
   });
 
-  it('old /auth/signin is gone, new /auth/sign-in exists', async () => {
+  it('old /auth/signin is gone, new /auth/sign-in returns 422 on an empty body (unguarded)', async () => {
     const oldPath = await request(app.getHttpServer())
       .post('/auth/signin')
       .send({});
@@ -22,10 +22,10 @@ describe('Kebab-case URL rename (e2e)', () => {
       .send({});
 
     expect(oldPath.status).toBe(404);
-    expect(newPath.status).not.toBe(404);
+    expect(newPath.status).toBe(422);
   });
 
-  it('old /auth/signup is gone, new /auth/sign-up exists', async () => {
+  it('old /auth/signup is gone, new /auth/sign-up returns 422 on an empty body (unguarded)', async () => {
     const oldPath = await request(app.getHttpServer())
       .post('/auth/signup')
       .send({});
@@ -34,20 +34,20 @@ describe('Kebab-case URL rename (e2e)', () => {
       .send({});
 
     expect(oldPath.status).toBe(404);
-    expect(newPath.status).not.toBe(404);
+    expect(newPath.status).toBe(422);
   });
 
-  it('old /auth/signout is gone, new /auth/sign-out exists', async () => {
-    // no Authorization header — the guard should still respond with 401,
-    // not 404, proving the route itself was matched
+  it('old /auth/signout is gone, new /auth/sign-out returns 401 with no token (guarded)', async () => {
+    // no Authorization header — the guard should respond with 401,
+    // proving the route itself was matched (not a 404)
     const oldPath = await request(app.getHttpServer()).post('/auth/signout');
     const newPath = await request(app.getHttpServer()).post('/auth/sign-out');
 
     expect(oldPath.status).toBe(404);
-    expect(newPath.status).not.toBe(404);
+    expect(newPath.status).toBe(401);
   });
 
-  it('old /auth/forgotpassword is gone, new /auth/forgot-password exists', async () => {
+  it('old /auth/forgotpassword is gone, new /auth/forgot-password returns 422 on an empty body (unguarded)', async () => {
     const oldPath = await request(app.getHttpServer())
       .post('/auth/forgotpassword')
       .send({});
@@ -56,10 +56,10 @@ describe('Kebab-case URL rename (e2e)', () => {
       .send({});
 
     expect(oldPath.status).toBe(404);
-    expect(newPath.status).not.toBe(404);
+    expect(newPath.status).toBe(422);
   });
 
-  it('old /auth/resetpassword is gone, new /auth/reset-password exists', async () => {
+  it('old /auth/resetpassword is gone, new /auth/reset-password returns 422 on an empty body (unguarded)', async () => {
     const oldPath = await request(app.getHttpServer())
       .post('/auth/resetpassword')
       .send({});
@@ -68,10 +68,10 @@ describe('Kebab-case URL rename (e2e)', () => {
       .send({});
 
     expect(oldPath.status).toBe(404);
-    expect(newPath.status).not.toBe(404);
+    expect(newPath.status).toBe(422);
   });
 
-  it('old /products/:productId/paymentLink is gone, new /products/:productId/payment-link exists', async () => {
+  it('old /products/:productId/paymentLink is gone, new /products/:productId/payment-link returns 401 with no token (guarded)', async () => {
     // no Authorization header — same trick as signout, avoids the
     // separate "product not found" 404 this endpoint can also return
     const oldPath = await request(app.getHttpServer()).post(
@@ -82,6 +82,6 @@ describe('Kebab-case URL rename (e2e)', () => {
     );
 
     expect(oldPath.status).toBe(404);
-    expect(newPath.status).not.toBe(404);
+    expect(newPath.status).toBe(401);
   });
 });

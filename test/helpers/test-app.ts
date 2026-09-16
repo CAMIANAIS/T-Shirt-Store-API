@@ -1,7 +1,20 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import {
+  INestApplication,
+  UnprocessableEntityException,
+  ValidationError,
+  ValidationPipe,
+} from '@nestjs/common';
 import { ThrottlerStorage } from '@nestjs/throttler';
 import { AppModule } from '../../src/app.module';
+
+function flattenValidationErrors(errors: ValidationError[]): string[] {
+  return errors.flatMap((error) =>
+    error.constraints
+      ? Object.values(error.constraints)
+      : flattenValidationErrors(error.children ?? []),
+  );
+}
 
 export async function createTestApp(
   options: { disableThrottling?: boolean } = {},
@@ -50,6 +63,8 @@ export async function createTestApp(
       transformOptions: {
         enableImplicitConversion: true,
       },
+      exceptionFactory: (errors) =>
+        new UnprocessableEntityException(flattenValidationErrors(errors)),
     }),
   );
 
