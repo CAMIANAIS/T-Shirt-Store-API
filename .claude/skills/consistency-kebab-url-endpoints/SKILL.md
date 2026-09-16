@@ -1,13 +1,9 @@
 ---
 name: consistency-kebab-url-endpoints
-description: it analize the code (controllers) on the project (NestJS).Output a report on enpoints which does NOT have them.
+description: Audit NestJS controllers and Markdown docs for kebab-case URL violations — route naming, endpoint rename, camelCase/snake_case paths. Reports file, line, and the corrected path.
 ---
 
 # Skill: Consistency — Kebab-Case URL Endpoints
-
-## Description
-
-Audit the codebase for endpoint URL violations of kebab-case format. Finds all routes that use camelCase, PascalCase, snake_case, or other non-kebab formats, reports their locations, and suggests corrections.
 
 ## When to Use
 
@@ -21,11 +17,16 @@ Run this skill when:
 
 ### Step 1: Locate Route Definition Files
 
-Scan the codebase for files that define endpoints. Typical locations:
+Scan the codebase for files that define endpoints. Typical locations — routes are not limited
+to these, so don't stop searching once you've checked them:
 
 - `src/routes/` (or equivalent routing directory)
 - `src/api/`
 - Files matching `@Controller()`, `*.controller.ts`, `@Get/@Post/@Put/@Patch/@Delete()`
+
+Also scan Markdown files (`*.md`) — `README.md`, `CLAUDE.md`, and files under `docs/` — not
+just controllers. Routes get documented there too, and a stale reference in a doc breaks
+onboarding just as badly as a stale route in code.
 
 ### Step 2: Extract All Route Definitions
 
@@ -37,51 +38,35 @@ From each file, capture:
 
 ### Step 3: Identify Violations
 
-A route violates kebab-case if any path segment contains:
+A route violates kebab-case if any path segment isn't already kebab-case. Most violations are
+obvious (camelCase, PascalCase, snake_case, mixed). The one pattern that needs judgment, since
+no case-shift or separator flags it automatically:
 
-- camelCase: `getUserProfile` → `get-user-profile`
-- PascalCase: `ProductList` → `product-list`
-- snake_case: `get_all` → `get-all`
-- Mixed: `get_Profile` → `get-profile`
-- Lowercase compound words (no separators, but clearly 2+ words joined): `forgotpassword` → `forgot-password`, `signin` → `sign-in`. Use judgment to identify word boundaries when there are no case shifts or underscores.
+- Lowercase compound words joined with no separator (`forgotpassword` → `forgot-password`,
+  `signin` → `sign-in`). Identify word boundaries by reading the words, not by pattern-matching.
 
 Do NOT flag:
 
 - Path parameters (`:id`, `{id}`, `[id]`)
 - Leading/trailing slashes or double slashes
 - File extensions
+- In Markdown: only count a match if it's backtick-wrapped and starts with `/` (e.g.
+  `` `POST /auth/signin` ``, `` `/auth/signin` ``). Plain prose mentioning the word with no
+  backticks and no leading `/` (e.g. "too many signin attempts") is not a path reference — skip
+  it. This also naturally excludes backtick-wrapped file paths (e.g.
+  `` `src/auth/auth.controller.ts` ``), since those don't start with `/`.
+- In Markdown: skip any match inside a section explicitly marked historical — a dated
+  "Resolved (date):" log entry, or text tagged `<!-- kebab-audit: skip -->`. Those describe a
+  past state, not a current instruction to fix.
 - Underscores in database field names or query params (only path segments matter)
 
 ### Step 4: Generate Report
 
-Output a structured list showing:
+Load `templates/report-format.md` for the exact structure and a worked example. Count
+violations from what Step 3 actually found — never hardcode a number.
 
-1. **Endpoint**: Method + full path
-2. **Location**: File and line number
-3. **Current**: Exact path as written
-4. **Should Be**: Kebab-case corrected version
-5. **Type**: camelCase / PascalCase / snake_case / mixed
+### Step 5: Hand Off
 
-Group by file. Include summary counts at top.
-
-## Expected Output
-
-Kebab-Case URL Audit
-Summary
-Total Violations: 6
-
-src/auth/auth.controller.ts (5 violations)
-POST /auth/signin
-Line 38 → Change to: /auth/sign-in
-POST /auth/signup
-Line 45 → Change to: /auth/sign-up
-POST /auth/signout
-Line 55 → Change to: /auth/sign-out
-POST /auth/forgotpassword
-Line 64 → Change to: /auth/forgot-password
-POST /auth/resetpassword
-Line 73 → Change to: /auth/reset-password
-
-src/products/products.controller.ts (1 violation)
-POST /products/:productId/paymentLink
-Line 175 → Change to: /products/:productId/payment-link
+Once the report is generated and renames are applied to the codebase, hand off to the
+`verify-kebab-rename-e2e` skill to confirm the rename didn't break routing. Give it the old →
+new path mapping from this report — that's its required input.

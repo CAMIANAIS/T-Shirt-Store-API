@@ -21,7 +21,7 @@ Seeded with a small demo catalog (1 category, 3 products with variants) and one 
 | Client  | `demo.client@tshirtstore.dev`  | `DemoClient!2026`  |
 | Manager | `demo.manager@tshirtstore.dev` | `DemoManager!2026` |
 
-Sign in via `POST /auth/signin` in Swagger, then click **Authorize** with the returned
+Sign in via `POST /auth/sign-in` in Swagger, then click **Authorize** with the returned
 `access_token` to try protected routes. Manager can create/update/disable products, upload
 images, and view all orders; Client can browse, cart, buy, like products, and view their own
 order history.
@@ -322,7 +322,7 @@ through this week's implementation. Full rationale for the schema items lives in
   account enumeration. `signUp`'s duplicate-email case is a deliberate exception (`409`, matches
   the project's status-code convention): a fully generic response there would need
   email-verification infra this app doesn't have, so it's mitigated with rate limiting on
-  `/auth/signup` instead.
+  `/auth/sign-up` instead.
 
 **CASL & payments (Week 4)**
 
