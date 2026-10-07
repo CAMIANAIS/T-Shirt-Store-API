@@ -40,6 +40,33 @@ export class WebhooksService {
           const payment_intent = event.data.object;
           const orderId = parseInt(payment_intent.metadata.orderId);
 
+          const order = await prisma.orders.findUnique({
+            where: { order_id: orderId },
+            include: { order_items: true },
+          });
+          if (!order) {
+            throw new Error(`Order with id ${orderId} not found`);
+          }
+
+          for (const item of order.order_items) {
+            const result = await prisma.product_variants.updateMany({
+              where: {
+                product_variant_id: item.product_variant_id,
+                stock_quantity: { gte: item.quantity },
+              },
+              data: { stock_quantity: { decrement: item.quantity } },
+            });
+            if (result.count === 0) {
+              await prisma.order_status_history.create({
+                data: {
+                  order_id: orderId,
+                  status: 'cancelled',
+                  created_at: new Date(),
+                },
+              });
+              return;
+            }
+          }
           await prisma.order_status_history.create({
             data: {
               order_id: orderId,
@@ -52,21 +79,6 @@ export class WebhooksService {
             where: { order_id: orderId },
             data: { payment_method: 'payment_intent' },
           });
-
-          const order = await prisma.orders.findUnique({
-            where: { order_id: orderId },
-            include: { order_items: true },
-          });
-          if (!order) {
-            throw new Error(`Order with id ${orderId} not found`);
-          }
-
-          for (const item of order.order_items) {
-            await prisma.product_variants.update({
-              where: { product_variant_id: item.product_variant_id },
-              data: { stock_quantity: { decrement: item.quantity } },
-            });
-          }
 
           await prisma.payments.create({
             data: {

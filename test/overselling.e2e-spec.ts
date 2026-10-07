@@ -33,7 +33,7 @@ describe('Overselling (e2e)', () => {
     return response.body.access_token;
   }
 
-  it('refunds buyer B when last shirt already sold', async () => {
+  it('cancels buyer B when last shirt already sold', async () => {
     // Arrange — two clients , one product with 1 stock, and two orders.
     const clientA = await createUserFixture(prisma, 'client');
     const clientB = await createUserFixture(prisma, 'client');
@@ -157,6 +157,6 @@ describe('Overselling (e2e)', () => {
       where: { order_id: orderB.id },
       orderBy: { created_at: 'desc' },
     });
-    expect(latestStatusB?.status).toBe('failed');
+    expect(latestStatusB?.status).toBe('cancelled');
   });
 });

@@ -16,7 +16,11 @@ describe('WebhooksService', () => {
     stripe_events: { create: jest.fn() },
     order_status_history: { create: jest.fn() },
     orders: { update: jest.fn(), findUnique: jest.fn(), create: jest.fn() },
-    product_variants: { update: jest.fn(), findUnique: jest.fn() },
+    product_variants: {
+      update: jest.fn(),
+      findUnique: jest.fn(),
+      updateMany: jest.fn(),
+    },
     payments: { create: jest.fn() },
   };
 
@@ -89,6 +93,7 @@ describe('WebhooksService', () => {
       user_id: 7,
       order_items: [{ product_variant_id: 5, quantity: 2 }],
     } as any);
+    mockTx.product_variants.updateMany.mockResolvedValue({ count: 1 } as any);
     const clearCartSpy = jest.spyOn(cartsService, 'clearCart');
     const updateEventSpy = jest.spyOn(prismaService.stripe_events, 'update');
     const event = {
@@ -119,8 +124,8 @@ describe('WebhooksService', () => {
       where: { order_id: 1 },
       data: { payment_method: 'payment_intent' },
     });
-    expect(mockTx.product_variants.update).toHaveBeenCalledWith({
-      where: { product_variant_id: 5 },
+    expect(mockTx.product_variants.updateMany).toHaveBeenCalledWith({
+      where: { product_variant_id: 5, stock_quantity: { gte: 2 } },
       data: { stock_quantity: { decrement: 2 } },
     });
     expect(updateEventSpy).toHaveBeenCalledWith({
