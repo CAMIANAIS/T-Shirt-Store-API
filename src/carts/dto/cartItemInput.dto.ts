@@ -8,7 +8,6 @@ export class CartItemInputDto {
   productVariantId: number;
 
   @ApiProperty({ example: 2 })
-  @IsNumber()
   @IsNotEmpty()
   @IsInt()
   @Min(1)
