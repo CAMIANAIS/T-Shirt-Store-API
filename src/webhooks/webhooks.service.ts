@@ -3,12 +3,14 @@ import type Stripe from 'stripe';
 import { Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CartsService } from '../carts/carts.service';
+import { StripeService } from '../stripe/stripe.service';
 
 @Injectable()
 export class WebhooksService {
   constructor(
     private prismaService: PrismaService,
     private cartsService: CartsService,
+    private stripeService: StripeService,
   ) {}
 
   async handleEvent(event: Stripe.Event): Promise<void> {
@@ -56,6 +58,7 @@ export class WebhooksService {
               },
               data: { stock_quantity: { decrement: item.quantity } },
             });
+            const idempotencyKey = `refund-${orderId}-${payment_intent.id}`;
             if (result.count === 0) {
               await prisma.order_status_history.create({
                 data: {
@@ -64,6 +67,14 @@ export class WebhooksService {
                   created_at: new Date(),
                 },
               });
+              await this.stripeService.refunds.create(
+                {
+                  payment_intent: payment_intent.id,
+                },
+                {
+                  idempotencyKey: idempotencyKey,
+                },
+              );
               return;
             }
           }

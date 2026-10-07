@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CartsService } from '../carts/carts.service';
 import { Prisma } from '../../generated/prisma/client';
 import type Stripe from 'stripe';
+import { StripeService } from '../stripe/stripe.service';
 
 describe('WebhooksService', () => {
   let service: WebhooksService;
@@ -41,6 +42,10 @@ describe('WebhooksService', () => {
         {
           provide: CartsService,
           useValue: { clearCart: jest.fn() },
+        },
+        {
+          provide: StripeService,
+          useValue: { refunds: { create: jest.fn() } },
         },
       ],
     }).compile();

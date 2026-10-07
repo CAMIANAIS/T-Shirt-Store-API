@@ -6,7 +6,7 @@ import { createUserFixture, createProductFixture } from './helpers/fixtures';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { StripeService } from '../src/stripe/stripe.service';
 import { EnvironmentVariables } from '../src/config/environment';
-
+import type Stripe from 'stripe';
 describe('Overselling (e2e)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
@@ -33,7 +33,7 @@ describe('Overselling (e2e)', () => {
     return response.body.access_token;
   }
 
-  it('cancels buyer B when last shirt already sold', async () => {
+  it('refunds buyer B when last shirt already sold', async () => {
     // Arrange — two clients , one product with 1 stock, and two orders.
     const clientA = await createUserFixture(prisma, 'client');
     const clientB = await createUserFixture(prisma, 'client');
@@ -126,6 +126,11 @@ describe('Overselling (e2e)', () => {
       payload: payloadB,
       secret: webhookSecret,
     });
+    const refundSpy = jest
+      .spyOn(stripeService.refunds, 'create')
+      .mockResolvedValue({
+        id: 'refund_test_id',
+      } as Stripe.Response<Stripe.Refund>);
     // Act
     const webhookResponseA = await request(app.getHttpServer())
       .post('/webhooks/stripe')
@@ -158,5 +163,14 @@ describe('Overselling (e2e)', () => {
       orderBy: { created_at: 'desc' },
     });
     expect(latestStatusB?.status).toBe('cancelled');
+    expect(refundSpy).toHaveBeenCalledTimes(1);
+    expect(refundSpy).toHaveBeenCalledWith(
+      { payment_intent: intentIdB },
+      expect.objectContaining({
+        idempotencyKey: expect.stringContaining(
+          `refund-${orderB.id}-${intentIdB}`,
+        ),
+      }),
+    );
   });
 });
