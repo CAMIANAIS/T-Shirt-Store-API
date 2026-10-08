@@ -26,6 +26,8 @@ Sign in via `POST /auth/signin` in Swagger, then click **Authorize** with the re
 images, and view all orders; Client can browse, cart, buy, like products, and view their own
 order history.
 
+The demo accounts are public on purpose because this is the way reviewers can log in using different roles. The risk is bots or any user can for example deactivate products. I accept it because it is for learning purposes only.
+
 ## Tech stack
 
 - NestJS + TypeScript
