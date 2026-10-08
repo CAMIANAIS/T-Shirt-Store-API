@@ -19,12 +19,12 @@ describe('Cart Validation (e2e)', () => {
 
   async function signIn(email: string, password: string): Promise<string> {
     const response = await request(app.getHttpServer())
-      .post('/auth/signin')
+      .post('/auth/sign-in')
       .send({ email, password });
     return response.body.access_token;
   }
 
-  it('check quantity went to negatives give a status 400', async () => {
+  it('check quantity went to negatives give a status 422', async () => {
     // Arrange — a client, and a product with known starting stock/price
     const client = await createUserFixture(prisma, 'client');
     const product = await createProductFixture(prisma, {
@@ -38,9 +38,9 @@ describe('Cart Validation (e2e)', () => {
       .post('/carts/items')
       .set('Authorization', `Bearer ${token}`)
       .send({ productVariantId: product.productVariantId, quantity: -3 });
-    expect(response.status).toBe(400);
+    expect(response.status).toBe(422);
   });
-  it('check quantity is 1.5 and it gives a status 400', async () => {
+  it('check quantity is 1.5 and it gives a status 422', async () => {
     // Arrange — a client, and a product with known starting stock/price
     const client = await createUserFixture(prisma, 'client');
     const product = await createProductFixture(prisma, {
@@ -54,6 +54,6 @@ describe('Cart Validation (e2e)', () => {
       .post('/carts/items')
       .set('Authorization', `Bearer ${token}`)
       .send({ productVariantId: product.productVariantId, quantity: 1.5 });
-    expect(response.status).toBe(400);
+    expect(response.status).toBe(422);
   });
 });
