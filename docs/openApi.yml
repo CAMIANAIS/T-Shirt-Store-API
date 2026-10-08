@@ -8,10 +8,10 @@ info:
     ## Authentication
 
     All endpoints require Bearer token authentication via JWT, except for the following public endpoints:
-    - `POST /auth/signup` — Registration (can't have token yet)
-    - `POST /auth/signin` — Login (can't have token yet)
-    - `POST /auth/forgotpassword` — Password reset request (can't have token yet)
-    - `POST /auth/resetpassword` — Password reset completion (can't have token yet)
+    - `POST /auth/sign-up` — Registration (can't have token yet)
+    - `POST /auth/sign-in` — Login (can't have token yet)
+    - `POST /auth/forgot-password` — Password reset request (can't have token yet)
+    - `POST /auth/reset-password` — Password reset completion (can't have token yet)
     - `GET /products`, `GET /products/{productId}`, `GET /products/{productId}/variants`, `GET /products/{productId}/images`, `GET /categories` — Product/category browsing doesn't require authentication
     - `POST /webhooks/stripe` — Called by Stripe, not a user; authenticated via Stripe-Signature header instead of a bearer token
 
@@ -1593,7 +1593,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
-  /products/{productId}/paymentLink:
+  /products/{productId}/payment-link:
     post:
       tags:
         - product
@@ -2555,7 +2555,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
-  /auth/signup:
+  /auth/sign-up:
     post:
       tags:
         - user
@@ -2608,7 +2608,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
-  /auth/signin:
+  /auth/sign-in:
     post:
       tags:
         - user
@@ -2668,7 +2668,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
-  /auth/signout:
+  /auth/sign-out:
     post:
       tags:
         - user
@@ -2691,7 +2691,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
-  /auth/forgotpassword:
+  /auth/forgot-password:
     post:
       tags:
         - user
@@ -2732,7 +2732,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
-  /auth/resetpassword:
+  /auth/reset-password:
     post:
       tags:
         - user

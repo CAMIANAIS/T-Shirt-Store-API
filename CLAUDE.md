@@ -88,7 +88,7 @@ front-load everything.
   not-found path. `signUp`'s duplicate-email case is a deliberate exception to this: it stays a
   `409 ConflictException` (matches the status-code convention above, keeps the API debuggable)
   rather than going fully generic, because a full fix there would require email-verification
-  infra this app doesn't have. Mitigate that specific gap with rate limiting on `/auth/signup`,
+  infra this app doesn't have. Mitigate that specific gap with rate limiting on `/auth/sign-up`,
   not response-shape hiding.
 
 ## API design conventions (full rationale in `docs/openApi_Patterns.md`)
@@ -99,8 +99,9 @@ front-load everything.
 - `DELETE` idempotency split: membership/relationship removal (e.g. a like, a cart item) is
   always `204`, safe to retry, no error if already gone. Deleting an actual resource is `404` if
   it's already gone — not idempotent, don't retry blindly.
-- Naming: camelCase everywhere, lowercase status enums, specific path params (`productId`, not
-  generic `id`).
+- Naming: kebab-case for URL path segments (`/products/{productId}/payment-link`, not
+  `paymentLink`), camelCase for JSON field names and query params, lowercase status enums,
+  specific path params (`productId`, not generic `id`).
 - The Stripe webhook route (`POST /webhooks/stripe`) is the deliberate exception to
   `security: []` being suspicious — it's called by Stripe's servers, not a logged-in user, and
   is verified via the `Stripe-Signature` header instead of a bearer token.
