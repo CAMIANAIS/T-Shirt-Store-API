@@ -78,13 +78,12 @@ front-load everything.
 - **Password-reset tokens** reuse `Auth_Tokens` (`type = 'reset'`) rather than a separate table —
   same shape as a refresh token (opaque random bytes, SHA-256 hashed, looked up by
   `token_hash`), just a 15-minute expiry instead of 7 days. `resetPassword` revokes the reset
-  token it used once the password update succeeds, so it can't be replayed. It does **not**
-  currently revoke the user's other active refresh tokens (sessions) on a successful reset —
-  known gap, flagged for a future fix, not yet built.
+  token it used once the password update succeeds, so it can't be replayed. It does revoke the
+  user's other active refresh tokens (sessions) on a successful reset.
 - **Account-enumeration resistance on auth endpoints**: `forgotPassword` returns the exact same
   response whether or not the email is registered — no early-return, no distinguishing
   exception, so a client (or attacker) can't learn which emails have accounts. The reset token
-  itself is only ever generated/stored when the user *does* exist; nothing is created on the
+  itself is only ever generated/stored when the user _does_ exist; nothing is created on the
   not-found path. `signUp`'s duplicate-email case is a deliberate exception to this: it stays a
   `409 ConflictException` (matches the status-code convention above, keeps the API debuggable)
   rather than going fully generic, because a full fix there would require email-verification
