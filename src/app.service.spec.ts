@@ -17,6 +17,8 @@ describe('AppService', () => {
   });
 
   describe('getHello', () => {
-    it.todo('assert the returned greeting');
+    it('assert the returned greeting', () => {
+      expect(service.getHello()).toBe('Hello World!');
+    });
   });
 });

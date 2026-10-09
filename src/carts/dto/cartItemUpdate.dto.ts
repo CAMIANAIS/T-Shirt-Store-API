@@ -1,9 +1,10 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsNumber } from 'class-validator';
+import { IsNotEmpty, IsInt, IsPositive } from 'class-validator';
 
 export class CartItemUpdateDto {
   @ApiProperty({ example: 3 })
-  @IsNumber()
   @IsNotEmpty()
+  @IsInt()
+  @IsPositive()
   quantity: number;
 }

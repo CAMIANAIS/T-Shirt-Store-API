@@ -28,7 +28,7 @@ describe('Checkout (e2e)', () => {
 
   async function signIn(email: string, password: string): Promise<string> {
     const response = await request(app.getHttpServer())
-      .post('/auth/signin')
+      .post('/auth/sign-in')
       .send({ email, password });
     return response.body.access_token;
   }
@@ -228,7 +228,7 @@ describe('Checkout (e2e)', () => {
     // Create the Payment Link — this hits real Stripe test mode, exactly
     // like createPaymentLink does outside of tests.
     await request(app.getHttpServer())
-      .post(`/products/${product.productId}/paymentLink`)
+      .post(`/products/${product.productId}/payment-link`)
       .set('Authorization', `Bearer ${token}`);
 
     // Simulate Stripe delivering `checkout.session.completed` once a

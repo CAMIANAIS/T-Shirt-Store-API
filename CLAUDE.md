@@ -78,17 +78,16 @@ front-load everything.
 - **Password-reset tokens** reuse `Auth_Tokens` (`type = 'reset'`) rather than a separate table —
   same shape as a refresh token (opaque random bytes, SHA-256 hashed, looked up by
   `token_hash`), just a 15-minute expiry instead of 7 days. `resetPassword` revokes the reset
-  token it used once the password update succeeds, so it can't be replayed. It does **not**
-  currently revoke the user's other active refresh tokens (sessions) on a successful reset —
-  known gap, flagged for a future fix, not yet built.
+  token it used once the password update succeeds, so it can't be replayed. It does revoke the
+  user's other active refresh tokens (sessions) on a successful reset.
 - **Account-enumeration resistance on auth endpoints**: `forgotPassword` returns the exact same
   response whether or not the email is registered — no early-return, no distinguishing
   exception, so a client (or attacker) can't learn which emails have accounts. The reset token
-  itself is only ever generated/stored when the user *does* exist; nothing is created on the
+  itself is only ever generated/stored when the user _does_ exist; nothing is created on the
   not-found path. `signUp`'s duplicate-email case is a deliberate exception to this: it stays a
   `409 ConflictException` (matches the status-code convention above, keeps the API debuggable)
   rather than going fully generic, because a full fix there would require email-verification
-  infra this app doesn't have. Mitigate that specific gap with rate limiting on `/auth/signup`,
+  infra this app doesn't have. Mitigate that specific gap with rate limiting on `/auth/sign-up`,
   not response-shape hiding.
 
 ## API design conventions (full rationale in `docs/openApi_Patterns.md`)
@@ -99,8 +98,9 @@ front-load everything.
 - `DELETE` idempotency split: membership/relationship removal (e.g. a like, a cart item) is
   always `204`, safe to retry, no error if already gone. Deleting an actual resource is `404` if
   it's already gone — not idempotent, don't retry blindly.
-- Naming: camelCase everywhere, lowercase status enums, specific path params (`productId`, not
-  generic `id`).
+- Naming: kebab-case for URL path segments (`/products/{productId}/payment-link`, not
+  `paymentLink`), camelCase for JSON field names and query params, lowercase status enums,
+  specific path params (`productId`, not generic `id`).
 - The Stripe webhook route (`POST /webhooks/stripe`) is the deliberate exception to
   `security: []` being suspicious — it's called by Stripe's servers, not a logged-in user, and
   is verified via the `Stripe-Signature` header instead of a bearer token.

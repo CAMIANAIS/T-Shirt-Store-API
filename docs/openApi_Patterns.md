@@ -152,7 +152,7 @@
 
 ### Stripe Payments (Section 7, MUST) — Closed
 
-**Payment Links** (`POST /products/{productId}/paymentLink`): generates a shareable Stripe link for a single-product purchase, no cart involved. `201` (a link is a created resource) with the link + expiry in the body — not `204`, since the client needs that URL back.
+**Payment Links** (`POST /products/{productId}/payment-link`): generates a shareable Stripe link for a single-product purchase, no cart involved. `201` (a link is a created resource) with the link + expiry in the body — not `204`, since the client needs that URL back.
 
 **Payment Intents** (`POST /orders/{orderId}/payment`): created against an existing order, once it's in `pending` status. `409` if the order's already paid or not pending — same "valid request, state says no" pattern as everything else using 409 this session, not a new invention.
 
@@ -195,11 +195,11 @@ A full pass comparing every documented path/method in `openApi.yml` against the 
 
 ### Auth — missing 429 on 2 endpoints
 
-`/auth/signin` and `/auth/signup` are rate-limited in code (`@Throttle`, 3/60s), same as `/auth/forgotpassword`/`/auth/resetpassword` — but only the latter two document a `429` response.
+`/auth/sign-in` and `/auth/sign-up` are rate-limited in code (`@Throttle`, 3/60s), same as `/auth/forgot-password`/`/auth/reset-password` — but only the latter two document a `429` response.
 
 ### Missing 409s (code documents/throws them, spec doesn't)
 
-- `POST /products/{productId}/paymentLink`
+- `POST /products/{productId}/payment-link`
 - `POST /products/{productId}/images`
 - `PATCH /products/{productId}/variants/{productVariantId}` (SKU-change collision)
 
@@ -209,4 +209,5 @@ A full pass comparing every documented path/method in `openApi.yml` against the 
 
 **Not covered by this pass**: full required/optional field-by-field check on every schema; live verification of what an invalid path param (e.g. `GET /products/abc`) actually returns (no explicit `ParseIntPipe` on most `@Param` id fields — worth checking whether that's a 400 or an unhandled 500).
 
+<!-- kebab-audit: skip (historical log entry, paths shown as they existed on 2026-09-04 — the kebab-case rename landed later, on 2026-09-09) -->
 **Resolved (2026-09-04, later same day)**: the two `429`s (`/auth/signin`, `/auth/signup`), all three `409`s above, and the one endpoint still missing a validation-error response (`GET /orders/{orderId}/status-history` — `GET /products/{productId}/variants` and `.../images` already had `422` documented from the systemic fix, so only status-history needed it). Categories/Users CRUD staying undocumented is a deliberate call — they're extra features built beyond `challenge.md`'s required scope, lower priority than the rest of this list.

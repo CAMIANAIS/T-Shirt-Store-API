@@ -35,14 +35,14 @@ export class AuthController {
   @ApiResponse({ status: 200, type: AuthDto })
   @Throttle({ default: { limit: 3, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
-  @Post('signin')
+  @Post('sign-in')
   signIn(@Body() signInDto: SignInDto) {
     return this.authService.signIn(signInDto.email, signInDto.password);
   }
   @ApiOperation({ summary: 'Create user' })
   @ApiResponse({ status: 201, type: AuthDto })
   @Throttle({ default: { limit: 3, ttl: 60000 } })
-  @Post('signup')
+  @Post('sign-up')
   signUp(@Body() signUpDto: SignUpDto) {
     return this.authService.signUp(signUpDto);
   }
@@ -52,7 +52,7 @@ export class AuthController {
   @ApiResponse({ status: 200 })
   @HttpCode(HttpStatus.OK)
   @UseGuards(JWTAuthGuard)
-  @Post('signout')
+  @Post('sign-out')
   signOut(@CurrentUser() user: JwtPayload, @Body() signOutDto: SignOutDto) {
     return this.authService.signOut(user.sub, signOutDto.token);
   }
@@ -61,7 +61,7 @@ export class AuthController {
   @ApiResponse({ status: 200 })
   @Throttle({ default: { limit: 3, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
-  @Post('forgotpassword')
+  @Post('forgot-password')
   forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
     return this.authService.forgotPassword(forgotPasswordDto.email);
   }
@@ -70,7 +70,7 @@ export class AuthController {
   @ApiResponse({ status: 200 })
   @Throttle({ default: { limit: 3, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
-  @Post('resetpassword')
+  @Post('reset-password')
   resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
     return this.authService.resetPassword(
       resetPasswordDto.token,
