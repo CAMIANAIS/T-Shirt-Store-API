@@ -28,7 +28,7 @@ describe('Overselling (e2e)', () => {
 
   async function signIn(email: string, password: string): Promise<string> {
     const response = await request(app.getHttpServer())
-      .post('/auth/signin')
+      .post('/auth/sign-in')
       .send({ email, password });
     return response.body.access_token;
   }
