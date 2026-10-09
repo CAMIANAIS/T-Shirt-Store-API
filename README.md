@@ -111,9 +111,9 @@ setup to run there.
 
 ## Project status
 
-![Test and coverage metrics: 192/193 unit tests across 28 suites, 85.1% statement coverage, 13 e2e tests across 4 suites, 35 endpoints across 26 routes and 11 controllers, CI gate lint→build→test→e2e green on main](docs/metrics.png)
+![Test and coverage metrics: 194 unit tests across 28 suites, 85.3% statement coverage, 30 e2e tests across 6 suites, 35 endpoints across 26 routes and 11 controllers, CI gate lint→build→test→e2e green on main](docs/metrics.png)
 
-[Artifact: Evaluation from Claude of this project](https://claude.ai/code/artifact/af86583c-6718-4ace-aa87-15272dad8795?org=707706b2-0828-47eb-9f55-c38a34aebb92)
+[Artifact: Evaluation from Claude of this project(updated at 10/09/2026)](https://claude.ai/code/artifact/af86583c-6718-4ace-aa87-15272dad8795?org=707706b2-0828-47eb-9f55-c38a34aebb92)
 
 All 10 of `challenge.md`'s minimum required features are implemented and tested, along with every
 item on its Mandatory Implementations checklist.
@@ -154,7 +154,7 @@ item on its Mandatory Implementations checklist.
 
 ### What I can prove
 
-The test suite grew with the code, not after it — 192 unit tests across 28 suites landed alongside
+The test suite grew with the code, not after it — 194 unit tests across 28 suites landed alongside
 each service as it was built, holding coverage at 85% statements / 84% lines the whole way. That
 habit caught real defects before review: a fail-open CASL guard that would have silently granted
 access on a missing policy decorator, a JWT payload shape that differed between sign-up and sign-in
@@ -178,7 +178,7 @@ moving the insert inside the same transaction as the payment work, not weakening
 
 ### E2E coverage, what's actually proven, case by case
 
-21 e2e tests across 4 suites. Not just "a test with this name exists" — here's what each area
+30 e2e tests across 6 suites. Not just "a test with this name exists", here's what each area
 proves against a real, running app and a real Postgres:
 
 **Authentication**
@@ -208,6 +208,18 @@ proves against a real, running app and a real Postgres:
   another client's order is refused (`403`)
 - A manager sees every client's orders; filtering by
   status **and** price range together returns exactly the matching set, excluding orders that match only one of the two conditions; filtering by date range excludes an order created outside the requested window.
+
+- cart-validation e2e suite came from PR #4.
+- kebab-rename e2e suite has 6 tests for proving all the rename process.
+
+**Requirements to run e2e tests locally**
+
+| Need                           | How to get it                                                                                                                   | If it's missing                                                                                                            |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Docker                         | Install Docker Desktop and make sure it's running (`docker ps` should work).                                                    | Redis won't start.                                                                                                         |
+| Redis                          | `docker run -d --name redis-e2e -p 6379:6379 redis:7`, then set `REDIS_URL=redis://localhost:6379`.                             | Tests fail with `connect ECONNREFUSED 127.0.0.1:6379`. Start the container again with `docker start redis-e2e`.            |
+| Stripe test key (must be real) | Stripe Dashboard → turn on Test mode → Developers → API keys. Copy the **Secret key** (`sk_test_...`) into `STRIPE_SECRET_KEY`. | Payment tests fail with `401 Invalid API Key`.                                                                             |
+| Ethereal SMTP (must be real)   | Go to https://ethereal.email/create and copy the user and password into `EMAIL_USER` / `EMAIL_PASSWORD`.                        | Ethereal accounts expire, and an expired one gives `535 Authentication failed`. Create a new account and update both vars. |
 
 ### Known gaps, honestly documented
 
